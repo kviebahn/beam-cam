@@ -676,7 +676,8 @@ if RealData==False:
 
 # Start camera (API)
 else: 
-    camera = CamAPI.VRmagicUSBCam_API()
+#    camera = CamAPI.VRmagicUSBCam_API()
+    camera = CamAPI.CameraAPI()
     camera.InitializeCam()
     camera.StartCam()
     StartGUI(camera)
