@@ -124,7 +124,7 @@ def StartGUI(camera='Simulation is used'):
     # Setup UI
     app = QtGui.QApplication([])
     win = QtGui.QWidget()
-    ui = Ui_Form(camera)
+    ui = Ui_Form(camera) #ImageViewerTemplate now takes a camera object as parameter
     ui.setupUi(win)
 
     # Create new image widget
