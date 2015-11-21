@@ -30,7 +30,9 @@ import GaussBeamSimulation as Sim
 reload(Sim)
 import MathematicalTools as MatTools
 reload(MatTools)
-import VRmUsbCamAPI as CamAPI
+
+import uEyeAPI as CamAPI
+#import VRmUsbCamAPI as CamAPI
 reload(CamAPI)
 
 from ctypes import *
@@ -44,18 +46,19 @@ import sys
 import time
 import os
 
+
+import ImageViewerTemplateUEye
+reload(ImageViewerTemplateUEye)
 from ImageViewerTemplate import Ui_Form
-# reload(ImageViewerTemplate)
 
 
-'''
-For RealData = False a simple simulation of a gaussian beam profile is started for testing purpses.
-For RealData = True the USB hubs are scanned for available cameras. The camera can be choosen in the
-according menu window. The images of the choosen camera are displayed and can be analysed.
-'''
+#For RealData = False a simple simulation of a gaussian beam profile is started for testing purpses.
+#For RealData = True the USB hubs are scanned for available cameras. The camera can be choosen in the according menu window. The images of the choosen camera are displayed and can be analysed.
+
 RealData = True
 
-
+width = 1600. #754.
+height = 1200. #480.
 
 
 
@@ -128,7 +131,7 @@ def StartGUI(camera='Simulation is used'):
     #Create image and add it to the view box
     img = pg.ImageItem(border='k')
     view.addItem(img)
-    view.setRange(QtCore.QRectF(0, 0, 754, 754))
+    view.setRange(QtCore.QRectF(0, 0, int(width), int(width)))
 
     # Create and add ROI for selecting an image region
     roi = pg.ROI([160, 40], [400, 400],pen='b') # First lower left edge in pxl [x,y], then Size in pxl 
@@ -304,16 +307,16 @@ def StartGUI(camera='Simulation is used'):
             
             if rotangle==0 or rotangle==2:
                 # view.setRange(QtCore.QRectF(0, 0, 754, 480))
-                ui.x0Spin.setRange(0.,754.)
-                ui.y0Spin.setRange(0.,480.)
-                bounds = QtCore.QRectF(0,0,753,479)
+                ui.x0Spin.setRange(0.,width)
+                ui.y0Spin.setRange(0.,height)
+                bounds = QtCore.QRectF(0,0,int(width - 1),int(height - 1))
                 roi.maxBounds = bounds
                 roisize = roi.size()
                 roipos = roi.pos()
-                if roisize[1] >= 480:
+                if roisize[1] >= int(height):
                     print roisize, roipos, 'ROI'
                     roi.setSize([200,200],finish=False)
-                if roipos[1] >= (480-roisize[1]):
+                if roipos[1] >= (int(height)-roisize[1]):
                     print roisize, roipos, 'ROI'
                     roi.setPos([200,200],finish=False)
                     roi.setSize([200,200],finish=False)
@@ -323,15 +326,15 @@ def StartGUI(camera='Simulation is used'):
 
             elif rotangle==1 or rotangle==3:
                 # view.setRange(QtCore.QRectF(0, 0, 480, 754))
-                ui.x0Spin.setRange(0.,480.)
-                ui.y0Spin.setRange(0.,754.)
-                bounds = QtCore.QRectF(0,0,479,753)
+                ui.x0Spin.setRange(0.,height)
+                ui.y0Spin.setRange(0.,width)
+                bounds = QtCore.QRectF(0,0,int(height - 1),int(width - 1))
                 roi.maxBounds = bounds
                 roisize = roi.size()
                 roipos = roi.pos()
-                if roisize[0] >= 480:
+                if roisize[0] >= int(height):
                     roi.setSize([200,200],finish=False)
-                if roipos[0] >= (480-roisize[0]):
+                if roipos[0] >= (int(height)-roisize[0]):
                     roi.setPos([200,200],finish=False)
                     roi.setSize([200,200],finish=False)
 
@@ -674,8 +677,8 @@ if RealData==False:
 # Start camera (API)
 else: 
     camera = CamAPI.VRmagicUSBCam_API()
-    # camera.InitializeCam()
-    # camera.StartCam()
+    camera.InitializeCam()
+    camera.StartCam()
     StartGUI(camera)
     camera.StopCam()
 
