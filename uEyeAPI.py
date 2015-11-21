@@ -1441,16 +1441,12 @@ class CameraAPI:
 	self.width, self.height = self.GetImageSize()
 
     def StartCam(self):
-#        width, height = 1600, 1200i
-	print self.height, self.width
         self.ImageArray = np.zeros((self.height,self.width), dtype = np.uint16)
         err, my_address, my_id = self.is_SetAllocatedImageMem(self.ImageArray)
         self.is_SetImageMem(my_address, my_id)
-        print 'StartCam: SUCCESS'
 
     def StopCam(self):
         self.is_ExitCamera()
-        print 'StopCam: SUCCESS'
 
 
     def GrabNextImage(self):
