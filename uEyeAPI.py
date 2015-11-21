@@ -988,7 +988,8 @@ class CameraAPI:
         
         #This variable is the camera handle, which is passed in almost every function.
         self.hCam = 0
-
+	self.width = 0
+	self.height = 0
         self.key = 0
         self.keytest = 0
         self.ImageArray = np.array([])
@@ -1425,15 +1426,24 @@ class CameraAPI:
         pass
 
     def GetDeviceInformation(self):
+    	'''returns the serial number of the active camera'''
         err, structInfo = self.is_GetCameraInfo()
         return getattr(structInfo, 'SerNo[12]')
 
+    def GetImageSize(self, camindex = 0):
+    	'''returns the image size (int) of the active camera in the format (width, height)'''
+    	err, structSensor = self.is_GetSensorInfo()
+	self.width, self.height = getattr(structSensor, 'nMaxWidth'), getattr(structSensor, 'nMaxHeight')
+	return getattr(structSensor, 'nMaxWidth'), getattr(structSensor, 'nMaxHeight')
+
     def InitializeCam(self):
         self.is_InitCamera()
+	self.width, self.height = self.GetImageSize()
 
     def StartCam(self):
-        width, height = 1600, 1200
-        self.ImageArray = np.zeros((height,width), dtype = np.uint16)
+#        width, height = 1600, 1200i
+	print self.height, self.width
+        self.ImageArray = np.zeros((self.height,self.width), dtype = np.uint16)
         err, my_address, my_id = self.is_SetAllocatedImageMem(self.ImageArray)
         self.is_SetImageMem(my_address, my_id)
         print 'StartCam: SUCCESS'
@@ -1468,7 +1478,7 @@ if __name__ == '__main__':
             #Cam.is_GetNumberOfCameras()
             
             err, structInfo = Cam.is_GetCameraInfo()
-        #    err, structSensor = Cam.is_GetSensorInfo(1)
+            err, structSensor = Cam.is_GetSensorInfo()
             Cam.is_Exposure(12, 50)
             Cam.is_SetHWGainFactor(0x8004, 100)    
         
@@ -1483,22 +1493,22 @@ if __name__ == '__main__':
             Cam.is_SetImageMem(my_address, my_id) # makes the allocated memory active
                
 
-            fig = plt.figure()
-            ax = fig.add_subplot(111)
-            fig.show()
+            #fig = plt.figure()
+            #ax = fig.add_subplot(111)
+            #fig.show()
 
-            for i0 in xrange(4):
-                Cam.is_CaptureVideo(25)
-                print my_numpy
+            #for i0 in xrange(4):
+            #    Cam.is_CaptureVideo(25)
+            #    print my_numpy
 
-                raw_input("press Enter to continue")
-                ax.imshow(my_numpy, interpolation = 'nearest')
-                #ax.hist(my_numpy.flatten(), 100, range = (0,70000))
-                fig.canvas.draw()
-                #plt.pause(0.02)
+            #    raw_input("press Enter to continue")
+            #    ax.imshow(my_numpy, interpolation = 'nearest')
+            #    #ax.hist(my_numpy.flatten(), 100, range = (0,70000))
+            #    fig.canvas.draw()
+            #    #plt.pause(0.02)
         
-            #Cam.is_CaptureStatus(2)
-            Cam.is_FreeImageMem(my_address, my_id)
+            ##Cam.is_CaptureStatus(2)
+            #Cam.is_FreeImageMem(my_address, my_id)
             
             
         finally:

@@ -57,8 +57,8 @@ from ImageViewerTemplate import Ui_Form
 
 RealData = True
 
-width = 1600. #754.
-height = 1200. #480.
+#width = 1600. #754.
+#height = 1200. #480.
 
 
 
@@ -91,6 +91,9 @@ def ellipse(x,sigmax,sigmay):
 def StartGUI(camera='Simulation is used'):
     '''Starts the GUI'''
 
+    global width, height
+    width, height = camera.GetImageSize(camera.CamIndex)
+    
     def InitializeCam(camera,ui):
         '''Initializes the camera, update the exposure time and gain value fields, switch off status LED'''
         ExpoTime = camera.GetExposureTime(camera.CamIndex)
@@ -99,6 +102,8 @@ def StartGUI(camera='Simulation is used'):
         ui.gainSpin.setProperty("value", GainValue)
         # Switch off status LED
         camera.SetStatusLED(camera.CamIndex,False)
+	
+
 
     def CreateFile(name='test'):
         '''
@@ -115,10 +120,11 @@ def StartGUI(camera='Simulation is used'):
 
     global img, databuffer, rotangle
 
+
     # Setup UI
     app = QtGui.QApplication([])
     win = QtGui.QWidget()
-    ui = Ui_Form()
+    ui = Ui_Form(camera)
     ui.setupUi(win)
 
     # Create new image widget
@@ -139,7 +145,7 @@ def StartGUI(camera='Simulation is used'):
     roi.addScaleHandle([0, 0.5], [0.5, 0.5])
     view.addItem(roi)
     roi.setZValue(10)  # Make sure ROI is drawn above
-    bounds = QtCore.QRectF(0,0,753,479) # Set bounds of the roi
+    bounds = QtCore.QRectF(0,0,int(width-1),int(height-1)) # Set bounds of the roi
     roi.maxBounds = bounds
 
     # Create marker of the peak position of the beam

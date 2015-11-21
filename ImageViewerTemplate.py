@@ -28,9 +28,11 @@ except AttributeError:
 
 class Ui_Form(object):
     
-    def __init__(self):
-        self.width = 1600. #754.
-        self.height = 1200. #480.
+    def __init__(self, camera):
+	self.cameraHandle = camera.hCam
+    	
+        self.width = camera.width #1600. #754.
+        self.height = camera.height # 1200. #480.
     
         self.gainMin = 0 #16 for VRMagic
         self.gainMax = 100 #64 for VRMagic
