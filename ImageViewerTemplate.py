@@ -28,10 +28,21 @@ except AttributeError:
 
 class Ui_Form(object):
     
+    def __init__(self):
+        self.width = 1600. #754.
+        self.height = 1200. #480.
+    
+        self.gainMin = 0 #16 for VRMagic
+        self.gainMax = 100 #64 for VRMagic
+    
+        self.exposureMin = 0.
+        self.exposureMax = 100.
+        self.exposureStep = 0.1
+    
     def setupUi(self, Form):
         '''Defines the general properties of the window'''
         Form.setObjectName(_fromUtf8("Form"))
-        Form.resize(1500, 1000)
+        Form.resize(int(self.width*5./4.), int(self.height*5./4.))
         self.gridLayout = QtGui.QGridLayout(Form)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
 
@@ -43,8 +54,8 @@ class Ui_Form(object):
 
         '''Defines the spin box for x0'''
         self.x0Spin = QtGui.QDoubleSpinBox(Form)
-        self.x0Spin.setRange(0.,754.)
-        self.x0Spin.setProperty("value", 350)
+        self.x0Spin.setRange(0.,self.width)
+        self.x0Spin.setProperty("value", int(self.width/2))
         self.x0Spin.setObjectName(_fromUtf8("x0Spin"))
         self.gridLayout.addWidget(self.x0Spin, 2, 0, 1, 1)
         
@@ -55,8 +66,8 @@ class Ui_Form(object):
 
         '''Defines the spin box for y0'''
         self.y0Spin = QtGui.QDoubleSpinBox(Form)
-        self.y0Spin.setRange(0.,480.)
-        self.y0Spin.setProperty("value", 240)
+        self.y0Spin.setRange(0.,self.height)
+        self.y0Spin.setProperty("value", int(self.height/2))
         self.y0Spin.setObjectName(_fromUtf8("y0Spin"))
         self.gridLayout.addWidget(self.y0Spin, 3, 0, 1, 1)
         
@@ -120,10 +131,10 @@ class Ui_Form(object):
 
         '''Defines the spin box for the exposure time'''
         self.exposureSpin = QtGui.QDoubleSpinBox(Form)
-        self.exposureSpin.setRange(0.,100.)
+        self.exposureSpin.setRange(self.exposureMin,self.exposureMax)
         self.exposureSpin.setProperty("value", 1.)
         self.exposureSpin.setDecimals(4)
-        self.exposureSpin.setSingleStep(0.1)
+        self.exposureSpin.setSingleStep(self.exposureStep)
         self.exposureSpin.setObjectName(_fromUtf8("exposureSpin"))
         self.gridLayout.addWidget(self.exposureSpin, 5, 2, 1, 1)
 
@@ -134,8 +145,8 @@ class Ui_Form(object):
 
         '''Defines the spin box for the gain value'''
         self.gainSpin = QtGui.QSpinBox(Form)
-        self.gainSpin.setRange(16,64)
-        self.gainSpin.setProperty("value", 16)
+        self.gainSpin.setRange(self.gainMin,self.gainMax)
+        self.gainSpin.setProperty("value", self.gainMin)
         self.gainSpin.setObjectName(_fromUtf8("gainSpin"))
         self.gridLayout.addWidget(self.gainSpin, 6, 2, 1, 1)
 
