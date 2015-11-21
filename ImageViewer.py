@@ -47,8 +47,8 @@ import time
 import os
 
 
-import ImageViewerTemplateUEye
-reload(ImageViewerTemplateUEye)
+import ImageViewerTemplate
+reload(ImageViewerTemplate)
 from ImageViewerTemplate import Ui_Form
 
 
