@@ -1,0 +1,5 @@
+Initialising routine
+- GetDeviceKeyList (find all available cameras)
+- GetDeviceKeyListSize (no of available cameras)
+- Initialize all available cameras (for loop)
+- make the current camera active (by initialising

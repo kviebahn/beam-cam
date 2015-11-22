@@ -62,31 +62,6 @@ RealData = True
 
 
 
-def Create2DGaussian(RoiShape,*Parameters):
-    '''Creates a 2D gaussian'''
-
-    x = np.arange(RoiShape[1])
-    y = np.arange(RoiShape[0])
-
-    XY = np.meshgrid(x,y)
-
-    XYflat = np.array(XY).reshape(2,RoiShape[1]*RoiShape[0]).T
-
-    # params = [amplitude,sigmax,position[0],position[1],sigmay,rotationangle,offset]
-
-
-    gaussflat = gaussian2(XYflat,*Parameters)
-    gauss = np.array(gaussflat).reshape(ny,nx)
-
-    return gauss
-
-def ellipse(x,sigmax,sigmay):
-    '''Creates an ellipse'''
-    return np.sqrt((sigmay**2)*(1-((x**2)/(sigmax**2))))
-
-
-
-
 
 def StartGUI(camera='Simulation is used'):
     '''Starts the GUI'''
@@ -475,7 +450,7 @@ def StartGUI(camera='Simulation is used'):
             x = np.linspace(-(FittedParamsHor[1]),(FittedParamsHor[1]),1000)
             sigmax = FittedParamsHor[1]
             sigmay = FittedParamsVert[1]
-            y = ellipse(x,sigmax,sigmay)
+            y = MatTools.ellipse(x,sigmax,sigmay)
 
             x = np.append(x,-x)
             y = np.append(y,-y)
@@ -506,7 +481,7 @@ def StartGUI(camera='Simulation is used'):
             sigmax = ui.sigmaxSpin.value()
             sigmay = ui.sigmaySpin.value()
             x = np.linspace(-(sigmax),(sigmax),1000)
-            y = ellipse(x,sigmax,sigmay)
+            y = MatTools.ellipse(x,sigmax,sigmay)
 
             x = np.append(x,-x)
             y = np.append(y,-y)
