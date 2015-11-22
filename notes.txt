@@ -2,4 +2,16 @@ Initialising routine
 - GetDeviceKeyList (find all available cameras)
 - GetDeviceKeyListSize (no of available cameras)
 - Initialize all available cameras (for loop)
-- make the current camera active (by initialising
+- make the current camera active (by initialising again (VRmagic) or setting camera.hCam to the right Handle
+- GetImageFormat
+- GetExposure and GetGain
+- uEye: allocate memory, activate memory
+- VRmagic: StartCam (whatever that means)
+
+Take image
+- GrabNextImage
+
+Exit routine
+- Free memory
+- exit camera (delete handle, only on quit!)
+- if quit program, exit camera
