@@ -6,6 +6,7 @@ drivers/
 *.swp
 # C extensions
 *.so
+*.h
 
 # Distribution / packaging
 .Python
