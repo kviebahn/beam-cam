@@ -67,7 +67,7 @@ def StartGUI(camera='Simulation is used'):
     '''Starts the GUI'''
 
     global width, height
-    width, height = camera.GetImageSize(camera.CamIndex)
+    width, height = camera.GetImageFormat(camera.CamIndex)
     
     def InitializeCam(camera,ui):
         '''Initializes the camera, update the exposure time and gain value fields, switch off status LED'''

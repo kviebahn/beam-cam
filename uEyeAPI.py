@@ -1430,7 +1430,7 @@ class CameraAPI:
         err, structInfo = self.is_GetCameraInfo()
         return getattr(structInfo, 'SerNo[12]')
 
-    def GetImageSize(self, camindex = 0):
+    def GetImageFormat(self, camindex = 0):
     	'''returns the image size (int) of the active camera in the format (width, height)'''
     	err, structSensor = self.is_GetSensorInfo()
 	self.width, self.height = getattr(structSensor, 'nMaxWidth'), getattr(structSensor, 'nMaxHeight')
@@ -1438,7 +1438,7 @@ class CameraAPI:
 
     def InitializeCam(self):
         self.is_InitCamera()
-	self.width, self.height = self.GetImageSize()
+	self.width, self.height = self.GetImageFormat()
 
     def StartCam(self):
         self.ImageArray = np.zeros((self.height,self.width), dtype = np.uint16)
