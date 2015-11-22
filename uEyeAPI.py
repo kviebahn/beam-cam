@@ -408,6 +408,18 @@ TimingDict={
     0x8001:'IS_GET_DEFAULT_FRAMERATE'
 }
 
+#/*!
+# * \brief Enumeration of commands of function is_PixelClock , \ref is_PixelClock.
+# */
+
+PixelClockDict = {
+	1:'IS_PIXELCLOCK_CMD_GET_NUMBER ' ,
+	2:'IS_PIXELCLOCK_CMD_GET_LIST   ' ,
+	3:'IS_PIXELCLOCK_CMD_GET_RANGE  ' ,
+	4:'IS_PIXELCLOCK_CMD_GET_DEFAULT' ,
+	5:'IS_PIXELCLOCK_CMD_GET        ' , 
+	6:'IS_PIXELCLOCK_CMD_SET        ' 
+}
 #// ----------------------------------------------------------------------------
 #// Gain definitions
 #// ----------------------------------------------------------------------------
@@ -1179,10 +1191,26 @@ class CameraAPI:
 
 #  // Set/Get Frame rate
 #  IDSEXP is_GetFrameTimeRange           (HIDS hCam, double *min, double *max, double *intervall);
+
+    def is_SetExternalTrigger():
+    	return 0
+
+
 #  IDSEXP is_SetFrameRate                (HIDS hCam, double FPS, double* newFPS);
-#    
+    def is_SetFrameRate(self, FPS):
+    	dblFPS = ct.c_double(FPS)
+	pnewFPS = ct.pointer(ct.c_double())
+	err = self.dll.is_SetFrameRate(UINT(self.hCam), dblFPS, pnewFPS)
+	print 'is_SetFrameRate: FPS = %f' % (pnewFPS.contents.value)
+	return err, pnewFPS.contents.value
+
 #  // Get frames per second
 #  IDSEXP is_GetFramesPerSecond          (HIDS hCam, double *dblFPS);
+    def is_GetFramesPerSecond(self):
+    	dblFPS = ct.pointer(ct.c_double())
+	err = self.dll.is_GetFramesPerSecond(UINT(self.hCam), dblFPS)
+	print 'is_GetFramesPerSecond: %f' % (dblFPS.contents.value)
+	return err, dblFPS.contents.value
 
 #  // Get Sensor info
 #  IDSEXP is_GetSensorInfo               (HIDS hCam, PSENSORINFO pInfo);
@@ -1351,21 +1379,8 @@ class CameraAPI:
 # implementing pixelclock?
 
 
-#/*!
-# * \brief Enumeration of commands of function is_PixelClock , \ref is_PixelClock.
-# */
-#typedef enum E_PIXELCLOCK_CMD
-#{
-#    IS_PIXELCLOCK_CMD_GET_NUMBER    = 1,
-#    IS_PIXELCLOCK_CMD_GET_LIST      = 2,
-#    IS_PIXELCLOCK_CMD_GET_RANGE     = 3,
-#    IS_PIXELCLOCK_CMD_GET_DEFAULT   = 4,
-#    IS_PIXELCLOCK_CMD_GET           = 5, 
-#    IS_PIXELCLOCK_CMD_SET           = 6
-#
-#} PIXELCLOCK_CMD;
-#
-#
+
+
 #/*!
 #* \brief Interface to set the pixel clock
 #* \param   hCam            valid device handle.
@@ -1374,8 +1389,19 @@ class CameraAPI:
 #* \param   cbSizeOfParam   size of *pParam.
 #* \return  error code
 #*/
-#IDSEXP is_PixelClock(HIDS hCam, UINT nCommand, void* pParam, UINT cbSizeOfParam);
-
+#IDSEXP is_PixelClock(HIDS hCam, UINT nCommand, void* pParam, UINT cbSizeOfParam);	
+    def is_PixelClock(self, nCommand, *PixelClock):
+        if (nCommand == 6):
+            Param = ct.c_double(PixelClock[0])
+        else:
+            Param = UINT()
+        pParam = ct.pointer(Param)
+        nSizeOfParam = ct.sizeof(Param)
+        print pParam.contents
+        err = self.dll.is_PixelClock(UINT(self.hCam), UINT(nCommand), pParam, UINT(nSizeOfParam))
+        print 'is_PixelClock: %s = %f' % (str(PixelClockDict[nCommand]), pParam.contents.value)
+        print 'is_PixelClock: %s' % (str(EC[err]))
+        return err, pParam.contents
 
 # maybe useful?
 #/*! 
@@ -1475,10 +1501,11 @@ if __name__ == '__main__':
             
             err, structInfo = Cam.is_GetCameraInfo()
             err, structSensor = Cam.is_GetSensorInfo()
-            Cam.is_Exposure(12, 50)
             Cam.is_SetHWGainFactor(0x8004, 100)    
-        
-            width, height = 1600, 1200
+            Cam.is_PixelClock(5)
+            Cam.is_Exposure(12, 1)
+            #Cam.is_SetFrameRate(100)
+	    width, height = 1600, 1200
             
             my_numpy = np.zeros((height, width), dtype = np.uint16)
             
@@ -1493,9 +1520,12 @@ if __name__ == '__main__':
             #ax = fig.add_subplot(111)
             #fig.show()
 
-            #for i0 in xrange(4):
-            #    Cam.is_CaptureVideo(25)
-            #    print my_numpy
+            for i0 in xrange(4):
+            	Cam.is_CaptureVideo(1)
+            	print my_numpy
+	    
+
+	    Cam.is_GetFramesPerSecond()
 
             #    raw_input("press Enter to continue")
             #    ax.imshow(my_numpy, interpolation = 'nearest')
@@ -1504,7 +1534,7 @@ if __name__ == '__main__':
             #    #plt.pause(0.02)
         
             ##Cam.is_CaptureStatus(2)
-            #Cam.is_FreeImageMem(my_address, my_id)
+            Cam.is_FreeImageMem(my_address, my_id)
             
             
         finally:
