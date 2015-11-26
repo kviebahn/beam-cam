@@ -1101,6 +1101,11 @@ class CameraAPI:
 #  IDSEXP   is_LockSeqBuf             (HIDS hCam, INT nNum, char* pcMem);
 #  IDSEXP   is_UnlockSeqBuf           (HIDS hCam, INT nNum, char* pcMem);
 
+#IDSEXP   is_SetExternalTrigger     (HIDS hCam, INT nTriggerMode);
+    def is_SetExternalTrigger(self, nTriggerMode):
+    	err = self.dll.is_SetExternalTrigger(UINT(self.hCam), INT(nTriggerMode))
+	print 'is_SetExernalTrigger: %s' % (EC[err])
+	return err
 
 #  IDSEXP   is_SetErrorReport         (HIDS hCam, INT Mode);
     def is_SetErrorReport(self, Mode):
@@ -1191,9 +1196,6 @@ class CameraAPI:
 
 #  // Set/Get Frame rate
 #  IDSEXP is_GetFrameTimeRange           (HIDS hCam, double *min, double *max, double *intervall);
-
-    def is_SetExternalTrigger():
-    	return 0
 
 
 #  IDSEXP is_SetFrameRate                (HIDS hCam, double FPS, double* newFPS);
@@ -1502,28 +1504,39 @@ if __name__ == '__main__':
             err, structInfo = Cam.is_GetCameraInfo()
             err, structSensor = Cam.is_GetSensorInfo()
             Cam.is_SetHWGainFactor(0x8004, 100)    
-            Cam.is_PixelClock(5)
-            Cam.is_Exposure(12, 1)
+            Cam.is_SetExternalTrigger(0)
+	    Cam.is_PixelClock(5)
+            Cam.is_Exposure(12, 25)
             #Cam.is_SetFrameRate(100)
 	    width, height = 1600, 1200
             
             my_numpy = np.zeros((height, width), dtype = np.uint16)
-            
+            my_numpy_1 = np.zeros((height, width), dtype = np.uint16)
+            my_numpy_2 = np.zeros((height, width), dtype = np.uint16)
+	    #for i1 in xrange(10): 
             err, my_address, my_id = Cam.is_SetAllocatedImageMem(my_numpy)
-            #print my_address
-            #my_id = 1
+            err, my_address_1, my_id_1 = Cam.is_SetAllocatedImageMem(my_numpy_1)
+            err, my_address_2, my_id_2 = Cam.is_SetAllocatedImageMem(my_numpy_2)
+            print my_address.contents
+            print my_address_1.contents
+            print my_address_2.contents
+
+            print my_id
                 
             Cam.is_SetImageMem(my_address, my_id) # makes the allocated memory active
+            Cam.is_SetImageMem(my_address_1, my_id_1) # makes the allocated memory active
+            Cam.is_SetImageMem(my_address_2, my_id_2) # makes the allocated memory active
                
 
             #fig = plt.figure()
             #ax = fig.add_subplot(111)
             #fig.show()
 
-            for i0 in xrange(4):
-            	Cam.is_CaptureVideo(1)
-            	print my_numpy
-	    
+            Cam.is_CaptureVideo(20)
+            
+#	    for i0 in xrange(4):
+#            	print my_numpy
+	    time.sleep(1)    	
 
 	    Cam.is_GetFramesPerSecond()
 
