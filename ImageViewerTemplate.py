@@ -293,7 +293,7 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         '''Sets the right names to the objects'''
 
-        Form.setWindowTitle(QtGui.QApplication.translate("Form", "VRmagic USB Cam Live View", None, QtGui.QApplication.UnicodeUTF8))
+        Form.setWindowTitle(QtGui.QApplication.translate("Form", "Beam cam live view", None, QtGui.QApplication.UnicodeUTF8))
         # self.pixelModeCheck.setText(QtGui.QApplication.translate("Form", "pixel mode", None, QtGui.QApplication.UnicodeUTF8))
         self.refbeamlabel.setText(QtGui.QApplication.translate("Form", "Reference Beam", None, QtGui.QApplication.UnicodeUTF8))
         self.x0label.setText(QtGui.QApplication.translate("Form", "x(0)", None, QtGui.QApplication.UnicodeUTF8))
