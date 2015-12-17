@@ -1465,8 +1465,11 @@ class CameraAPI:
 	return getattr(structSensor, 'nMaxWidth'), getattr(structSensor, 'nMaxHeight')
 
     def InitializeCam(self):
-        self.is_InitCamera()
-	self.width, self.height = self.GetImageFormat()
+        err, hCam = self.is_InitCamera()
+	if int(err) == 3:
+	    raise Exception('Error: No camera detected')
+	else:
+	    self.width, self.height = self.GetImageFormat()
 
     def StartCam(self):
         self.ImageArray = np.zeros((self.height,self.width), dtype = np.uint16)
