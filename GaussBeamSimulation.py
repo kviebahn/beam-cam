@@ -118,7 +118,9 @@ class GaussBeamSimulation:
         gaussflat = gaussian2(XYflat,*params)
         gauss = np.array(gaussflat).reshape(ny,nx)
 
-        self.image = self.image + noise + gauss
+        self.image = (self.image + noise + gauss).astype(int)
+        #image saturation        
+        self.image[np.where(self.image>2**14)]=2**14
 
     def CreateImages(self,number=10):
         i = 0

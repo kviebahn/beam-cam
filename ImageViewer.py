@@ -53,11 +53,9 @@ For RealData = False a simple simulation of a gaussian beam profile is started f
 For RealData = True the USB hubs are scanned for available cameras. The camera can be choosen in the
 according menu window. The images of the choosen camera are displayed and can be analysed.
 '''
-RealData = True
-
-
-
-
+RealData = False
+IMGMAX = 2**14
+analyser = None
 
 def Create2DGaussian(RoiShape,*Parameters):
     '''Creates a 2D gaussian'''
@@ -110,7 +108,8 @@ def StartGUI(camera='Simulation is used'):
 
 
 
-    global img, databuffer, rotangle
+    global img, databuffer, rotangle, analyser
+
 
     # Setup UI
     app = QtGui.QApplication([])
@@ -162,7 +161,6 @@ def StartGUI(camera='Simulation is used'):
     refcontour.setPen('r')
     view.addItem(refcontour)
     refcontour.setZValue(25)
-
 
 
     # Add plot of the vertical sum of the ROI
@@ -249,7 +247,6 @@ def StartGUI(camera='Simulation is used'):
                 camera.GetDeviceKeyListEntry(camindex=i)
                 serial = camera.GetDeviceInformation()
                 ui.choosecam.addItem(serial)
-                i += 1
             # ui.choosecam.addItem('Test') #only for testing!!
 
 
@@ -262,7 +259,8 @@ def StartGUI(camera='Simulation is used'):
         print camera.CamIndex.value, 'Camera Index'
         camera.StartCam()
         InitializeCam(camera,ui)
-
+        
+    
 
 
     # Show the window
@@ -341,8 +339,13 @@ def StartGUI(camera='Simulation is used'):
             if RealData:
                 camera.SetExposureTime(camera.CamIndex,ui.exposureSpin.value())
                 camera.SetGainValue(camera.CamIndex,ui.gainSpin.value())
-
-            img.setImage(ImageArray.T)
+            
+            ima = ImageArray.astype(float)            
+            ImageArray = ima.copy()
+            ImageArray[np.where(ImageArray>=.95*IMGMAX)] = np.nan            
+            ima[np.where(ima>IMGMAX)] = 0
+            
+            img.setImage(ima.T)
 
             if ui.connect.isChecked():
                 upddateroipos(databuffer[3,-1],databuffer[4,-1])
@@ -380,9 +383,167 @@ def StartGUI(camera='Simulation is used'):
 
             
             
-      
-
     def updateRoi():
+        global analyser
+#        print 'update roi', analyser
+        if analyser is not None:
+            analyser()
+
+    def beamProfilerSetup():
+        """setup titles for the plots and hide unused elements"""
+        p2.setTitle('Cut Vertical')
+        p3.setTitle('Cut Horizontal')
+        roi.show()
+        p2.show()
+        p3.show()
+        vLine.show()
+        hLine.show()
+        peakpos.show()
+        contour.show()
+        
+    def noneSetup():
+        roi.hide()
+        p2.hide()
+        p3.hide()
+        vLine.hide()
+        hLine.hide()
+        peakpos.hide()
+        contour.hide()
+        pass
+    
+    def beamPositionSetup():
+        p2.setTitle('Sum Vertical')
+        p3.setTitle('Sum Horizontal')
+        roi.show()
+        p2.show()
+        p3.show()
+        vLine.show()
+        hLine.show()
+        peakpos.show()
+        contour.show()
+
+    def beamProfilerAnalysis():
+        '''
+        In this method the Roi data is updated. It is called when the Roi position and/or shape changes
+        and when the image is updated. The centroid of the roi is determined
+        two cuts (x and y through the roi are fit by gaussians and both the data and
+        the fit is shown. Peak amplitude is shown and the localtion of the centroid
+        '''
+
+        global ImageArray, img, databuffer
+
+        # Get ROI data
+        selected = roi.getArrayRegion(ImageArray.T, img)
+
+        # Calculate amplitude
+        amplitude = np.nansum(selected)
+        
+
+        # Shift buffer one step forward and store amplitude and time stamp
+        databuffer[1:,:-1] = databuffer[1:,1:]
+        actualtime = time.time()
+        databuffer[1,-1] = actualtime - starttime
+        databuffer[2,-1] = amplitude
+
+        #find centroid
+#        xs,ys = selected.shape
+#        X,Y=np.meshgrid(np.arange(ys),np.arange(xs))
+#        ss = selected-np.nanmin(selected)
+#        s = np.nansum(ss)        
+#        my = int(np.nansum(X*ss)/s)
+#        mx = int(np.nansum(Y*ss)/s)
+        
+
+        #find max
+        mx,my = np.where(selected==np.nanmax(selected))
+        mx, my = mx[0],my[0]
+
+        # Plot sum in horizontal direction and fit gaussian
+        datahor = selected[:,my]
+        p2.plot(datahor, clear=True)
+        FittedParamsHor = MatTools.FitGaussian(datahor)[0]
+        xhor = np.arange(datahor.size)
+
+        if ui.fitCheck.isChecked():
+            p2.plot(MatTools.gaussian(xhor,*FittedParamsHor), pen=(0,255,0))
+
+
+        # Plot amplitude
+        xamp = np.array([1.,2.])
+        yamp = np.array([amplitude])
+        amphist.plot(xamp, yamp, stepMode=True, clear=True, fillLevel=0, brush=(0,0,255,150))
+
+        # Plot sum in vertical direction and fit gaussian, save fit results in buffer and show in text box
+        datavert = selected[mx]
+        p3.plot(datavert, clear=True).rotate(90)
+        FittedParamsVert = MatTools.FitGaussian(datavert)[0]
+        xvert = np.arange(datavert.size)
+
+        if ui.fitCheck.isChecked():
+            p3.plot(MatTools.gaussian(xvert,*FittedParamsVert), pen=(0,255,0)).rotate(90)
+            poshor = FittedParamsHor[2]+roi.pos()[0]
+            posvert = FittedParamsVert[2]+roi.pos()[1]
+            waistx = FittedParamsHor[1]
+            waisty = FittedParamsVert[1]
+
+            databuffer[3,-1] = poshor
+            databuffer[4,-1] = posvert
+            databuffer[5,-1] = waistx
+            databuffer[6,-1] = waisty
+
+            updatetext(amplitude,poshor,posvert,waistx,waisty)
+
+            
+
+            
+
+
+        if ui.trackCheck.isChecked():
+
+            
+            # Adjust cross hair
+#            hLine.setPos(FittedParamsVert[2]+roi.pos()[1])
+#            vLine.setPos(FittedParamsHor[2]+roi.pos()[0])
+            hLine.setPos(my+roi.pos()[1])
+            vLine.setPos(mx+roi.pos()[0])
+
+            vLine.show()
+            hLine.show()
+
+            # Plot peak
+            pos = np.array([[(FittedParamsHor[2]+roi.pos()[0]),(FittedParamsVert[2]+roi.pos()[1])]])           
+            peak.setData(pos,clear=True)
+
+            # Plot contour
+            x = np.linspace(-(FittedParamsHor[1]),(FittedParamsHor[1]),1000)
+            sigmax = FittedParamsHor[1]
+            sigmay = FittedParamsVert[1]
+            y = ellipse(x,sigmax,sigmay)
+
+            x = np.append(x,-x)
+            y = np.append(y,-y)
+            
+            x += FittedParamsHor[2]+roi.pos()[0]
+            y += FittedParamsVert[2]+roi.pos()[1]
+            # X,Y = np.meshgrid(x,y)
+            # contour.clear()
+            contour.setData(x,y,clear=True)
+
+        else:
+            # view.removeItem(hLine)
+            # view.removeItem(vLine)
+
+            # Hide cross hair, peak and contour if 'Track beam' is not checked
+            vLine.hide()
+            hLine.hide()
+            contour.clear()
+            peak.clear()
+
+
+        # Update the time evolution plot
+        updatetimescrolling()
+
+    def beamPositionAnalysis():
         '''
         In this method the Roi data is updated. It is called when the Roi position and/or shape changes
         and when the image is updated. The ROI data is summed up in vertical and horizontal directions 
@@ -633,7 +794,23 @@ def StartGUI(camera='Simulation is used'):
         roi.setSize([xsize,ysize],finish=False)
         # roi.stateChanged()
 
+    def updateanalyser(index):
+        global analyser        
+        curananame = ui.anaCombo.currentText()
+        print index, curananame
+        analyser, setup = analysers[str(curananame)]
+        setup()
+        
 
+    analysers = {'None':(None,noneSetup),
+                'Beam profiler': (beamProfilerAnalysis,beamProfilerSetup),
+                 'Beam position and power': (beamPositionAnalysis,beamPositionSetup)} 
+    '''Initialize the analysis combobox and connect it'''
+    for name,fn in analysers.iteritems():
+        ui.anaCombo.addItem(name)
+
+    updateanalyser(0)    
+    ui.anaCombo.currentIndexChanged[int].connect(updateanalyser)    
 
 
     # Start timer for the loop

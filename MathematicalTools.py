@@ -70,7 +70,7 @@ def FitGaussian(data):
         return arrs, cutoff
 
     # x = np.arange(data.size)
-    usepervimpro = True # Should the 'split' method be used to improve performance?
+    usepervimpro = False # Should the 'split' method be used to improve performance?
     meansize = 5 # if usepervimpro = True: how many values are taken together to calculate the mean.
     critvalue = 200 # value from which on the 'split' method is used.
 
@@ -84,6 +84,9 @@ def FitGaussian(data):
     else:
         x = np.arange(data.size)
 
+    nonnan = np.where(~np.isnan(data))
+    data = data[nonnan]
+    x = x[nonnan]
     # print data
 
     def errf(params):
