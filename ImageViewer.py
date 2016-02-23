@@ -53,7 +53,7 @@ For RealData = False a simple simulation of a gaussian beam profile is started f
 For RealData = True the USB hubs are scanned for available cameras. The camera can be choosen in the
 according menu window. The images of the choosen camera are displayed and can be analysed.
 '''
-RealData = True
+RealData = False
 
 
 
@@ -129,6 +129,34 @@ def StartGUI(camera='Simulation is used'):
     img = pg.ImageItem(border='k')
     view.addItem(img)
     view.setRange(QtCore.QRectF(0, 0, 754, 754))
+
+
+    ############################################################################################################
+    ############################################################################################################
+    #Change colourscale: simple Test (by Timon)
+
+
+    #Add color (test)
+    pos = np.array([0.0,0.5,1.0])
+    color = np.array([[0,0,0,255],[255,128,0,255],[255,255,0,255]],dtype=np.ubyte)
+    ## OR Copy from matplotlib
+    pos = np.linspace(0,1,256)
+    color = np.array([cm.afmhot(i) for i in range(256)])
+    ####
+    map1 = pg.ColorMap(pos,color)
+    lut = map1.getLookupTable(0.0,1.0,256)
+    img.setLookupTable(lut)
+    img.setLevels([0,1])
+
+
+
+
+    ############################################################################################################
+    ############################################################################################################
+
+
+
+
 
     # Create and add ROI for selecting an image region
     roi = pg.ROI([160, 40], [400, 400],pen='b') # First lower left edge in pxl [x,y], then Size in pxl 
