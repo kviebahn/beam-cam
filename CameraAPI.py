@@ -26,24 +26,172 @@ import numpy as numpy
 
 
 class Camera_API(object):
-	'''Functions for the Camera'''
+    '''Functions for the Camera'''
 
 
-	def __init__(self):
-		'''
-		To be implemented!!!
-		'''
-		self.imageSize = None
+    def __init__(self):
+        '''
+        To be implemented!!!
+        '''
+
+        self.imageArray = None
+
+        self.cameraList = None
+
+        self.imageSize = None
+        self.saturationValue = None
+        self.exposureTime = None
+        self.exposureRange = None
+        self.gainValue = None
+        self.gainRange = None
 
 
 
-	def StartCamera(self):
 
-		print "This method is not implemented here!"
+    def StartCamera(self):
+        '''
+        This method starts the camera.
+        '''
+
+        print "This method is not implemented here!"
 
 
 
-	def StopCamera(self):
+    def StopCamera(self):
+        '''
+        This method stops the camera.
+        '''
 
-		print "This method is not implemented here!"
+        print "This method is not implemented here!"
+
+
+    def CreateCameraList(self):
+        '''
+        This method creates a camera list. All available cameras of one type are listed in an array of
+        strings (their serial number).
+        '''
+
+        print "This method is not implemented here!"
+
+
+    def GetNextImage(self):
+        '''
+        This method gets the next image and stores it in self.imageArray.
+        '''
+
+        print "This method is not implemented here!"
+
+
+    def GetImageSize(self):
+        '''
+        This method reads out the actual image size and stores it in self.imageSize and returns the value.
+        '''
+
+        print "This method is not implemented here!"
+
+        return None
+
+
+    def GetSaturationValue(self):
+        '''
+        This method reads out the actual saturation value of the camera and stores it in self.saturationValue and returns the value.
+        '''
+
+        print "This method is not implemented here!"
+
+        return None
+
+
+    def GetExposureTime(self):
+        '''
+        This method returns the actual value of the exposure time and sets the global variable.
+        '''
+
+        print "This method is not implemented here!"
+
+        return None
+
+
+    def SetExposureTime(self):
+        '''
+        This method sets the exposure time to the input value, returns the value and sets the global variable.
+        '''
+
+        print "This method is not implemented here!"
+
+        return None
+
+
+    def GetExposureTimeRange(self):
+        '''
+        Returns the adjustable range of the exposure time and sets the global variable.
+        '''
+
+        print "This method is not implemented here!"
+
+        return None
+
+
+    def GetGainValue(self):
+        '''
+        This method returns the actual value of the gain and sets the global variable.
+        '''
+
+        print "This method is not implemented here!"
+
+        return None
+
+
+    def SetGainValue(self):
+        '''
+        This method sets the gain to the input value, returns the value and sets the global variable.
+        '''
+
+        print "This method is not implemented here!"
+
+        return None
+
+
+    def GetGainRange(self):
+        '''
+        Returns the adjustable range of the gain and sets the global variable.
+        '''
+
+        print "This method is not implemented here!"
+
+        return None
+
+
+    def InitializeCamera(self):
+        '''
+        This method initializes a camera using methods implemented above.
+        '''
+
+        self.StartCamera()
+        imagesize = self.GetImageSize()
+        saturationvalue = self.GetSaturationValue()
+        exposuretime = self.GetExposureTime()
+        exposuretimerange = self.GetExposureTimeRange()
+        gainvalue = self.GetGainValue()
+        gainrange = self.GetGainRange()
+
+        return imagesize,saturationvalue,exposuretime,exposuretimerange,gainvalue,gainrange
+
+        
+
+    def GiveCameraList(self):
+        '''
+        Returns camera list.
+        '''
+
+        return self.cameraList
+
+
+
+    def GiveImage(self):
+        '''
+        Returns image array.
+        '''
+
+        return self.imageArray
 
