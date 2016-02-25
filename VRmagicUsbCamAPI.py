@@ -27,7 +27,7 @@ Please see the README.md file for a copy of the GNU General Public License, or o
 """
 
 from CameraAPI import Camera_API
-reload (Camera_API)
+#reload (CameraAPI)
 
 from ctypes import *
 import numpy as np
@@ -134,6 +134,7 @@ class VRmagicUSBCam_API(Camera_API):
         self.gainRange = None
 
         # Own variables
+        self.key = None
         self.keytest = 0
         self.CamIndex = None
 
@@ -440,6 +441,108 @@ class VRmagicUSBCam_API(Camera_API):
         if Error==0:
             self.ShowErrorInformation()
         print 'Cam stopped'
+
+
+    '''
+    -----------------------------------------------------------------------------------------------
+    New methods
+    -----------------------------------------------------------------------------------------------
+    '''
+
+    def StartCamera(self,camindex=0):
+        '''
+        This method starts the camera.
+        '''
+
+        self.CamIndex = camindex
+        self.GetDeviceKeyListEntry(camindex=camindex)
+
+
+        if self.keytest==0:
+            print 'No valid key available!'
+        elif self.key.contents.m_busy!=0:
+            print 'Camera is busy!'
+        else:
+            Error = self.dll.VRmUsbCamOpenDevice(self.key,byref(self.CamIndex))
+            if Error==0:
+                self.ShowErrorInformation()
+            else:
+                print 'Device opened successfully'
+
+                #self.format = ImageFormat()
+                #self.GetSourceFormatInformation()
+                #self.UseSourceFormat()
+
+                Error = self.dll.VRmUsbCamStart(self.CamIndex)
+                print 'Started Cam'
+
+
+    def StopCamera(self):
+        '''
+        This method stops the camera, that is in use at the moment.
+        '''
+
+        Error = self.dll.VRmUsbCamStop(self.CamIndex)
+        if Error==0:
+            self.ShowErrorInformation()
+
+        Error = self.dll.VRmUsbCamFreeDeviceKey(byref(self.key))
+        if Error==0:
+            self.ShowErrorInformation()
+
+        Error = self.dll.VRmUsbCamCloseDevice(self.CamIndex)
+        if Error==0:
+            self.ShowErrorInformation()
+
+        print 'Cam stopped'
+
+
+
+    def CreateCameraList(self):
+
+        '''
+        This method creates a camera list. All available cameras of one type are listed in an array of
+        strings (their serial number).
+        '''
+
+        self.GetDeviceKeyList()
+        NumberCams = self.GetDeviceKeyListSize()
+        cameralist = []
+        if NumberCams != 0:
+            for i in range(NumberCams):
+                self.CamIndex = i
+                self.GetDeviceKeyListEntry(camindex=i)
+                serial = self.GetDeviceInformation()
+                
+                addlist = [serial]
+                cameralist = cameralist + addlist
+                print cameralist, "cameralist"
+                
+                i += 1
+            
+        else:
+            print 'ERROR -- No cameras found!!'
+
+
+        self.cameraList = cameralist
+        return cameralist
+
+
+
+
+
+
+if __name__=="__main__":
+    check = VRmagicUSBCam_API()
+    check.CreateCameraList()
+    check.StartCamera()
+    check.StopCamera()
+
+    print check.cameraList, "Camera List"
+
+
+
+
 
 
 

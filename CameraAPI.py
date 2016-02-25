@@ -177,7 +177,7 @@ class Camera_API(object):
 
         return imagesize,saturationvalue,exposuretime,exposuretimerange,gainvalue,gainrange
 
-        
+
 
     def GiveCameraList(self):
         '''

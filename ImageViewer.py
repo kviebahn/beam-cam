@@ -265,7 +265,7 @@ def StartGUI(camera='Simulation is used'):
 
 
 
-    '''Errorhandling not implemented properly!!'''
+    '''Adapt to new API structure!!'''
 
     # Check for available cameras and set up menu
     if RealData:
