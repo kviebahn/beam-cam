@@ -84,7 +84,8 @@ class Camera_API(object):
 
     def GetImageSize(self):
         '''
-        This method reads out the actual image size and stores it in self.imageSize and returns the value.
+        This method reads out the actual image size and stores it in self.imageSize and returns the values
+        as tuple (width,height).
         '''
 
         print "This method is not implemented here!"

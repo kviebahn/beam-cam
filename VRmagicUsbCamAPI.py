@@ -32,6 +32,7 @@ from CameraAPI import Camera_API
 from ctypes import *
 import numpy as np
 import sys
+import matplotlib.pyplot as plt
 
 '''
 DO NOT CHANGE!!
@@ -137,6 +138,7 @@ class VRmagicUSBCam_API(Camera_API):
         self.key = None
         self.keytest = 0
         self.CamIndex = None
+        self.format = ImageFormat()
 
 
 
@@ -255,62 +257,20 @@ class VRmagicUSBCam_API(Camera_API):
 
 
 
-    '''Exposure time'''
-    def GetExposureTime(self,device):
-
-        ExpoTime = c_float(0.0)
-        Error = self.dll.VRmUsbCamGetPropertyValueF(device, ExposureTimeAddress, byref(ExpoTime))
-        if Error==0:
-            self.ShowErrorInformation()
-        # if Error==1:
-        #     print 'Exposure Time: ', ExpoTime.value, 'ms'
-        return ExpoTime.value
-
-    def SetExposureTime(self,device,exposuretime):
-
-        ExpoTime = c_float(exposuretime)
-        Error = self.dll.VRmUsbCamSetPropertyValueF(device, ExposureTimeAddress, byref(ExpoTime))
-        if Error==0:
-            self.ShowErrorInformation()
-        # if Error==1:
-        #     print 'Exposure Time set to: ', ExpoTime.value, 'ms'
-
-
-    '''Gain'''
-    def GetGainValue(self,device):
-
-        GainValue = c_int(0)
-        Error = self.dll.VRmUsbCamGetPropertyValueI(device, GainValueAddress, byref(GainValue))
-        if Error==0:
-            self.ShowErrorInformation()
-        # if Error==1:
-        #     print 'Gain Value: ', GainValue.value
-        return GainValue.value
-
-    def SetGainValue(self,device,gainvalue=0):
-
-        GainValue = c_int(gainvalue)
-        Error = self.dll.VRmUsbCamSetPropertyValueI(device, GainValueAddress, byref(GainValue))
-        if Error==0:
-            self.ShowErrorInformation()
-        # if Error==1:
-        #     print 'Gain Value set to: ', GainValue.value
-
-
     '''Switch on/off status LED'''
-    def GetStatusLED(self,device):
+    def GetStatusLED(self):
 
         StatusLED = c_bool(0)
-        Error = self.dll.VRmUsbCamGetPropertyValueB(device, StatusLEDAddress, byref(StatusLED))
+        Error = self.dll.VRmUsbCamGetPropertyValueB(self.CamIndex, StatusLEDAddress, byref(StatusLED))
         if Error==0:
             self.ShowErrorInformation()
         if Error==1:
             print 'Status LED on: ', StatusLED.value
 
-    def SetStatusLED(self,device,statusled=False):
+    def SetStatusLED(self,statusled=False):
 
         StatusLED = c_bool(statusled)
-        Error = self.dll.VRmUsbCamSetPropertyValueB(device, StatusLEDAddress, byref(StatusLED))
+        Error = self.dll.VRmUsbCamSetPropertyValueB(self.CamIndex, StatusLEDAddress, byref(StatusLED))
         if Error==0:
             self.ShowErrorInformation()
         if Error==1:
@@ -469,9 +429,9 @@ class VRmagicUSBCam_API(Camera_API):
             else:
                 print 'Device opened successfully'
 
-                #self.format = ImageFormat()
-                #self.GetSourceFormatInformation()
-                #self.UseSourceFormat()
+                
+                self.GetSourceFormatInformation()
+                self.UseSourceFormat()
 
                 Error = self.dll.VRmUsbCamStart(self.CamIndex)
                 print 'Started Cam'
@@ -528,6 +488,141 @@ class VRmagicUSBCam_API(Camera_API):
         return cameralist
 
 
+    def GetNextImage(self):
+        '''
+        This method gets the next image and stores it in self.imageArray.
+        
+        The next image is grabbed and stored as a 'numpy array'.
+        This array can then be used by external programs to display the image or a live view.
+        '''
+
+        self.dll.VRmUsbCamLockNextImageEx2.argtypes = [c_uint,c_uint,POINTER(POINTER(Image)),POINTER(c_uint),c_int]
+        source_image_p = POINTER(Image)()
+        framesdropped = c_uint(0)
+        timeout = 5000
+        Error = self.dll.VRmUsbCamLockNextImageEx2(self.CamIndex,c_uint(1),byref(source_image_p),byref(framesdropped),c_int(timeout))
+                
+        if Error==0:
+            self.ShowErrorInformation()
+        if Error==1:
+
+            ImageList = list(source_image_p.contents.mp_buffer[0:(self.format.m_height)*int(source_image_p.contents.m_pitch)])
+            ImageList = [ord(i) for i in ImageList]
+
+            imagearray = np.array(ImageList)
+            imagearray = np.reshape(imagearray,(self.format.m_height,int(source_image_p.contents.m_pitch)))
+            imagearray = imagearray[:,:self.format.m_width]
+            self.imageArray = imagearray
+
+        Error = self.dll.VRmUsbCamUnlockNextImage(self.CamIndex,byref(source_image_p))
+        if Error==0:
+            self.ShowErrorInformation()
+
+
+    def GetImageSize(self):
+        '''
+        This method reads out the actual image size and stores it in self.imageSize and returns the values
+        as tuple (width,height).
+        '''
+
+        imagesize = (int(self.format.m_width),int(self.format.m_height))
+        self.imageSize = imagesize
+
+        return imagesize
+
+
+    def GetSaturationValue(self):
+        '''
+        This method reads out the actual saturation value of the camera and stores it in self.saturationValue and returns the value.
+        '''
+        bytesperpxl = c_int(0)
+
+        Error = self.dll.VRmUsbCamGetPixelDepthFromColorFormat(self.format.m_color_format,byref(bytesperpxl))
+
+        if Error==0:
+            self.ShowErrorInformation()
+            return None
+
+        else:
+            satvalue = 2**(bytesperpxl.value*8) - 1
+       
+            # print 'Saturation value: ', satvalue
+
+            self.saturationValue = satvalue
+            return satvalue
+
+
+    def GetExposureTime(self):
+        '''
+        This method returns the actual value of the exposure time and sets the global variable.
+        '''
+
+        ExpoTime = c_float(0.0)
+        Error = self.dll.VRmUsbCamGetPropertyValueF(self.CamIndex, ExposureTimeAddress, byref(ExpoTime))
+        if Error==0:
+            self.ShowErrorInformation()
+            return None
+        else:    
+            # print ExpoTime.value, "Expo time"
+            self.exposureTime = ExpoTime.value
+            return self.exposureTime
+
+
+    def SetExposureTime(self,exposuretime=0):
+        '''
+        This method sets the exposure time to the input value, returns the value and sets the global variable.
+        '''
+
+        ExpoTime = c_float(exposuretime)
+        Error = self.dll.VRmUsbCamSetPropertyValueF(self.CamIndex, ExposureTimeAddress, byref(ExpoTime))
+        if Error==0:
+            self.ShowErrorInformation()
+            return None
+        else:
+            # if Error==1:
+            #     print 'Exposure Time set to: ', ExpoTime.value, 'ms'
+            self.exposureTime = ExpoTime.value
+            return self.exposureTime
+
+
+    def GetGainValue(self):
+        '''
+        This method returns the actual value of the gain and sets the global variable.
+        '''
+
+        GainValue = c_int(0)
+        Error = self.dll.VRmUsbCamGetPropertyValueI(self.CamIndex, GainValueAddress, byref(GainValue))
+        if Error==0:
+            self.ShowErrorInformation()
+            return None
+        else:
+            # print 'Gain Value: ', GainValue.value
+            self.gainValue = GainValue.value
+            return self.gainValue
+
+
+    def SetGainValue(self,gainvalue=0):
+        '''
+        This method sets the gain to the input value, returns the value and sets the global variable.
+        '''
+
+        GainValue = c_int(gainvalue)
+        Error = self.dll.VRmUsbCamSetPropertyValueI(self.CamIndex, GainValueAddress, byref(GainValue))
+        if Error==0:
+            self.ShowErrorInformation()
+            return None
+        else:
+            # print 'Gain Value set to: ', GainValue.value
+            self.gainValue = GainValue.value
+            return self.gainValue
+
+
+
+
+
+        
+
+
 
 
 
@@ -536,9 +631,31 @@ if __name__=="__main__":
     check = VRmagicUSBCam_API()
     check.CreateCameraList()
     check.StartCamera()
+
+    size = check.GetImageSize()
+    print size, "Image Size"
+
+    check.GetSaturationValue()
+
+    check.GetNextImage()
+    # check.GetExposureTime()
+    # check.SetExposureTime(50.)
+    # check.GetGainValue()
+    # check.SetGainValue(34)
+
+
+
     check.StopCamera()
 
+
+    plt.figure()
+    plt.imshow(check.imageArray)
+
     print check.cameraList, "Camera List"
+
+
+
+    plt.show()
 
 
 
