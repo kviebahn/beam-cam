@@ -30,8 +30,8 @@ import GaussBeamSimulation as Sim
 reload(Sim)
 import MathematicalTools as MatTools
 reload(MatTools)
-import VRmUsbCamAPI as CamAPI
-reload(CamAPI)
+import VRmagicUsbCamAPI as VRmagicAPI
+reload(VRmagicAPI)
 
 from ctypes import *
 from pyqtgraph.Qt import QtCore, QtGui
@@ -53,7 +53,7 @@ For RealData = False a simple simulation of a gaussian beam profile is started f
 For RealData = True the USB hubs are scanned for available cameras. The camera can be choosen in the
 according menu window. The images of the choosen camera are displayed and can be analysed.
 '''
-RealData = False
+RealData = True
 
 
 
@@ -89,13 +89,13 @@ def StartGUI(camera='Simulation is used'):
     '''Starts the GUI'''
 
     def InitializeCam(camera,ui):
-        '''Initializes the camera, update the exposure time and gain value fields, switch off status LED'''
-        ExpoTime = camera.GetExposureTime(camera.CamIndex)
+        '''Initializes the camera, update the exposure time and gain value fields'''
+        ExpoTime = camera.GetExposureTime()
         ui.exposureSpin.setProperty("value", ExpoTime)
-        GainValue = camera.GetGainValue(camera.CamIndex)
+        GainValue = camera.GetGainValue()
         ui.gainSpin.setProperty("value", GainValue)
         # Switch off status LED
-        camera.SetStatusLED(camera.CamIndex,False)
+        # camera.SetStatusLED(camera.CamIndex,False)
 
     def CreateFile(name='test'):
         '''
@@ -108,13 +108,95 @@ def StartGUI(camera='Simulation is used'):
         else:
             print 'A file with this name already exists!'
 
+    def TestAction():
+        print 'Test camera opened'
+
+    def ChangeCamera(camera,camindex=0):
+        camera.StopCamera()
+        camera.StartCamera(camindex=camindex)
+
+
 
 
     global img, databuffer, rotangle
 
+
+
+    '''
+    ---------------------------------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------------------------
+    Outsource UI setup in seperate class!!
+    '''
+
+
+
     # Setup UI
     app = QtGui.QApplication([])
+
+    # w = QtGui.QMainWindow()
+
+    # mainMenu = w.menuBar()
+    # mainMenu.setNativeMenuBar(False)
+    # fileMenu = mainMenu.addMenu('&amp;File')
+
+    mainwin = QtGui.QMainWindow()
+
+    menubar = QtGui.QMenuBar(mainwin)
+    fileMenu = menubar.addMenu('&File')
+    exitAction = QtGui.QAction('Exit', mainwin)        
+    exitAction.triggered.connect(QtGui.qApp.quit)
+    fileMenu.addAction(exitAction)
+
+    cameraMenu = menubar.addMenu('&Camera')
+
+    refreshAction = QtGui.QAction('Refresh', cameraMenu)
+    cameraMenu.addAction(refreshAction)
+    cameraMenu.addSeparator()
+    vrmagicMenu = cameraMenu.addMenu('VRmagic')
+    
+    
+
+
+
+    if RealData:
+
+        cameralist = camera.CreateCameraList()
+        numbercams = len(cameralist)
+        
+        if numbercams != 0:
+            for i in range(numbercams):
+                name = cameralist[i]
+                # testaction = QtGui.QAction(name, mainwin)
+                testaction = vrmagicMenu.addAction(name)
+                mainwin.connect(testaction,QtCore.SIGNAL('triggered()'), lambda i=i: ChangeCamera(camera,camindex=i))
+                vrmagicMenu.addAction(testaction)
+                
+        
+        else:
+            '''Create pop-out window!!'''
+
+            print 'ERROR -- No cameras found!!'
+
+    # for i in range(3):
+    #     name = 'Test ' + str(i)
+    #     testaction = QtGui.QAction(name, mainwin)
+    #     testaction.triggered.connect(TestAction)
+    #     vrmagicMenu.addAction(testaction)
+
+
+
+
+
+
+    mainwin.setMenuBar(menubar)
+
     win = QtGui.QWidget()
+
+    mainwin.setCentralWidget(win)
+    mainwin.resize(1550, 1050)
+    mainwin.setWindowTitle('Beam Profiling Tool')
+
+
     ui = Ui_Form()
     ui.setupUi(win)
 
@@ -270,31 +352,28 @@ def StartGUI(camera='Simulation is used'):
     # Check for available cameras and set up menu
     if RealData:
 
-        camera.GetDeviceKeyList()
-        NumberCams = camera.GetDeviceKeyListSize()
-        if NumberCams != 0:
-            for i in range(NumberCams):
-                camera.GetDeviceKeyListEntry(camindex=i)
-                serial = camera.GetDeviceInformation()
-                ui.choosecam.addItem(serial)
+        cameralist = camera.CreateCameraList()
+        numbercams = len(cameralist)
+        
+        if numbercams != 0:
+            for i in range(numbercams):
+                ui.choosecam.addItem(cameralist[i])
                 i += 1
             # ui.choosecam.addItem('Test') #only for testing!!
 
-
-
         else:
+            '''Create pop-out window!!'''
+
             print 'ERROR -- No cameras found!!'
 
         CamIndex = ui.choosecam.currentIndex()
-        camera.GetDeviceKeyListEntry(camindex=CamIndex)
+        camera.StartCamera(camindex=CamIndex)
         print camera.CamIndex.value, 'Camera Index'
-        camera.StartCam()
         InitializeCam(camera,ui)
 
 
-
     # Show the window
-    win.show()
+    mainwin.show()
 
 
                 
@@ -323,8 +402,8 @@ def StartGUI(camera='Simulation is used'):
                 ImageArray = simulation.image
             else:
                 try:
-                    camera.GrabNextImage()
-                    ImageArray = camera.ImageArray
+                    camera.GetNextImage()
+                    ImageArray = camera.GiveImage()
                 except: # Show last image if grab failed -> Does not work (?)
                     ImageArray = np.rot90(ImageArray,-1*rotangle)
 
@@ -364,11 +443,13 @@ def StartGUI(camera='Simulation is used'):
                     roi.setSize([200,200],finish=False)
 
 
-               
+            '''
+            To implement: Set only if value is changed!!
+            '''  
 
             if RealData:
-                camera.SetExposureTime(camera.CamIndex,ui.exposureSpin.value())
-                camera.SetGainValue(camera.CamIndex,ui.gainSpin.value())
+                camera.SetExposureTime(ui.exposureSpin.value())
+                camera.SetGainValue(ui.gainSpin.value())
 
             img.setImage(ImageArray.T)
 
@@ -379,7 +460,7 @@ def StartGUI(camera='Simulation is used'):
 
         else:
             if RealData:
-                camera.GrabNextImage()
+                camera.GetNextImage()
 
 
 
@@ -571,11 +652,10 @@ def StartGUI(camera='Simulation is used'):
         '''
         Updates the camera, when another one is chosen.
         '''
-        camera.StopCam()
+        camera.StopCamera()
         CamIndex = ui.choosecam.currentIndex()
         print ui.choosecam.currentIndex(), 'Current Index'
-        camera.GetDeviceKeyListEntry(camindex=CamIndex)
-        camera.StartCam()
+        camera.StartCamera(camindex=CamIndex)
         InitializeCam(camera,ui)
         # print 'Camera changed!', camera.CamIndex.value
 
@@ -701,11 +781,14 @@ if RealData==False:
 
 # Start camera (API)
 else: 
-    camera = CamAPI.VRmagicUSBCam_API()
+    '''
+    Add handling for different camera types!!
+    '''
+    camera = VRmagicAPI.VRmagicUSBCam_API()
     # camera.InitializeCam()
     # camera.StartCam()
     StartGUI(camera)
-    camera.StopCam()
+    camera.StopCamera()
 
 
 

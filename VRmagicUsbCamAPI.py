@@ -459,12 +459,16 @@ class VRmagicUSBCam_API(Camera_API):
             else:
                 print 'Device opened successfully'
 
-                
+                # self.GetDeviceInformation()
+
                 self.GetSourceFormatInformation()
                 self.UseSourceFormat()
 
                 Error = self.dll.VRmUsbCamStart(self.CamIndex)
-                print 'Started Cam'
+                if Error==0:
+                    self.ShowErrorInformation()
+                else:
+                    print 'Started Cam'
 
 
     def StopCamera(self):
@@ -506,7 +510,7 @@ class VRmagicUSBCam_API(Camera_API):
                 
                 addlist = [serial]
                 cameralist = cameralist + addlist
-                print cameralist, "cameralist"
+                # print cameralist, "cameralist"
                 
                 i += 1
             
@@ -731,30 +735,38 @@ class VRmagicUSBCam_API(Camera_API):
 if __name__=="__main__":
     check = VRmagicUSBCam_API()
     check.CreateCameraList()
-    check.StartCamera()
+    check.StartCamera(camindex=0)
 
     size = check.GetImageSize()
     print size, "Image Size"
 
-    check.GetSaturationValue()
+    # check.GetSaturationValue()
 
     check.GetNextImage()
     # check.GetExposureTime()
-    # check.SetExposureTime(50.)
+    # check.SetExposureTime(230.)
     # check.GetGainValue()
     # check.SetGainValue(34)
-    check.GetExposureTimeRange()
-    check.GetExposureTimeSteps()
-    check.GetGainRange()
-    check.GetGainSteps()
+    # check.GetExposureTimeRange()
+    # check.GetExposureTimeSteps()
+    # check.GetGainRange()
+    # check.GetGainSteps()
+
+    image = check.imageArray
+
+
 
 
 
     check.StopCamera()
 
-
     plt.figure()
-    plt.imshow(check.imageArray)
+    plt.imshow(image)
+
+    # del image
+
+
+    
 
     print check.cameraList, "Camera List"
 
