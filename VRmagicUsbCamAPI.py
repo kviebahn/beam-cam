@@ -27,7 +27,7 @@ Please see the README.md file for a copy of the GNU General Public License, or o
 """
 
 from CameraAPI import Camera_API
-#reload (CameraAPI)
+# reload (CameraAPI)
 
 from ctypes import *
 import numpy as np
@@ -99,18 +99,46 @@ class Image(Structure):
     def __init__(self):
         pass
 
-class Rect(Structure):
-    '''Struct that holds the data for a roi of the image'''
+# class Rect(Structure):
+#     '''Struct that holds the data for a roi of the image'''
+
+#     _fields_ = [
+#     ('m_left',c_int),
+#     ('m_top',c_int),
+#     ('m_width',c_int),
+#     ('m_height',c_int)
+#     ]
+
+#     def __init__(self):
+#         pass
+
+class ExpoTimeProps(Structure):
+    '''Struct that holds the data of the properties of the exposure time'''
 
     _fields_ = [
-    ('m_left',c_int),
-    ('m_top',c_int),
-    ('m_width',c_int),
-    ('m_height',c_int)
+    ('m_default',c_float),
+    ('m_min',c_float),
+    ('m_max',c_float),
+    ('m_step',c_float)
     ]
 
     def __init__(self):
         pass
+
+class GainProps(Structure):
+    '''Struct that holds the data of the properties of the gain value'''
+
+    _fields_ = [
+    ('m_default',c_int),
+    ('m_min',c_int),
+    ('m_max',c_int),
+    ('m_step',c_int)
+    ]
+
+    def __init__(self):
+        pass
+
+
 
 
 class VRmagicUSBCam_API(Camera_API):
@@ -131,8 +159,10 @@ class VRmagicUSBCam_API(Camera_API):
         self.saturationValue = None
         self.exposureTime = None
         self.exposureRange = None
+        self.exposureSteps = None
         self.gainValue = None
         self.gainRange = None
+        self.gainSteps = None
 
         # Own variables
         self.key = None
@@ -314,93 +344,93 @@ class VRmagicUSBCam_API(Camera_API):
 
 
 
-    def GrabNextImage(self):
-        '''
-        The next image is grabbed and stored as a 'numpy array'.
-        This array can then be used by external programs to display the image or a live view.
-        '''
+    # def GrabNextImage(self):
+    #     '''
+    #     The next image is grabbed and stored as a 'numpy array'.
+    #     This array can then be used by external programs to display the image or a live view.
+    #     '''
 
-        self.dll.VRmUsbCamLockNextImageEx2.argtypes = [c_uint,c_uint,POINTER(POINTER(Image)),POINTER(c_uint),c_int]
+    #     self.dll.VRmUsbCamLockNextImageEx2.argtypes = [c_uint,c_uint,POINTER(POINTER(Image)),POINTER(c_uint),c_int]
                 
-        source_image_p = POINTER(Image)()
+    #     source_image_p = POINTER(Image)()
 
-        framesdropped = c_uint(0)
+    #     framesdropped = c_uint(0)
 
-        timeout = 5000
+    #     timeout = 5000
 
-        Error = self.dll.VRmUsbCamLockNextImageEx2(self.CamIndex,c_uint(1),byref(source_image_p),byref(framesdropped),c_int(timeout))
+    #     Error = self.dll.VRmUsbCamLockNextImageEx2(self.CamIndex,c_uint(1),byref(source_image_p),byref(framesdropped),c_int(timeout))
                 
-        if Error==0:
-            self.ShowErrorInformation()
-        if Error==1:
-            # print'Image taken!'
+    #     if Error==0:
+    #         self.ShowErrorInformation()
+    #     if Error==1:
+    #         # print'Image taken!'
 
-            ImageList = list(source_image_p.contents.mp_buffer[0:(self.format.m_height)*int(source_image_p.contents.m_pitch)])
-            ImageList = [ord(i) for i in ImageList]
-            # print len(ImageList)
+    #         ImageList = list(source_image_p.contents.mp_buffer[0:(self.format.m_height)*int(source_image_p.contents.m_pitch)])
+    #         ImageList = [ord(i) for i in ImageList]
+    #         # print len(ImageList)
 
-            self.ImageArray = np.array(ImageList)
-            self.ImageArray = np.reshape(self.ImageArray,(self.format.m_height,int(source_image_p.contents.m_pitch)))
-            self.ImageArray = self.ImageArray[:,:self.format.m_width]
-
-
-        Error = self.dll.VRmUsbCamUnlockNextImage(self.CamIndex,byref(source_image_p))
-        # print 'Unlock Image'
-        if Error==0:
-            self.ShowErrorInformation()
+    #         self.ImageArray = np.array(ImageList)
+    #         self.ImageArray = np.reshape(self.ImageArray,(self.format.m_height,int(source_image_p.contents.m_pitch)))
+    #         self.ImageArray = self.ImageArray[:,:self.format.m_width]
 
 
-
-
-    def InitializeCam(self):
-        '''The available cameras are intitialized.'''
-
-        self.GetDeviceKeyList()
-        self.GetDeviceKeyListEntry()
+    #     Error = self.dll.VRmUsbCamUnlockNextImage(self.CamIndex,byref(source_image_p))
+    #     # print 'Unlock Image'
+    #     if Error==0:
+    #         self.ShowErrorInformation()
 
 
 
 
-    def StartCam(self):
-        '''One camera is started.'''
+    # def InitializeCam(self):
+    #     '''The available cameras are intitialized.'''
 
-        if self.keytest==0:
-            print 'No valid key available!'
-        elif self.key.contents.m_busy!=0:
-            print 'Camera is busy!'
-        else:
-            Error = self.dll.VRmUsbCamOpenDevice(self.key,byref(self.CamIndex))
-            if Error==0:
-                self.ShowErrorInformation()
-            else:
-                print 'Device opened successfully'
-
-                self.format = ImageFormat()
-                self.GetSourceFormatInformation()
-                self.UseSourceFormat()
-
-
-                Error = self.dll.VRmUsbCamStart(self.CamIndex)
-                print 'Started Cam'
-
-    def StopCam(self):
-        '''One camera is stopped.'''
-
-        Error = self.dll.VRmUsbCamStop(self.CamIndex)
-        if Error==0:
-            self.ShowErrorInformation()
+    #     self.GetDeviceKeyList()
+    #     self.GetDeviceKeyListEntry()
 
 
 
 
-        Error = self.dll.VRmUsbCamFreeDeviceKey(byref(self.key))
-        if Error==0:
-            self.ShowErrorInformation()
+    # def StartCam(self):
+    #     '''One camera is started.'''
 
-        Error = self.dll.VRmUsbCamCloseDevice(self.CamIndex)
-        if Error==0:
-            self.ShowErrorInformation()
-        print 'Cam stopped'
+    #     if self.keytest==0:
+    #         print 'No valid key available!'
+    #     elif self.key.contents.m_busy!=0:
+    #         print 'Camera is busy!'
+    #     else:
+    #         Error = self.dll.VRmUsbCamOpenDevice(self.key,byref(self.CamIndex))
+    #         if Error==0:
+    #             self.ShowErrorInformation()
+    #         else:
+    #             print 'Device opened successfully'
+
+    #             self.format = ImageFormat()
+    #             self.GetSourceFormatInformation()
+    #             self.UseSourceFormat()
+
+
+    #             Error = self.dll.VRmUsbCamStart(self.CamIndex)
+    #             print 'Started Cam'
+
+    # def StopCam(self):
+    #     '''One camera is stopped.'''
+
+    #     Error = self.dll.VRmUsbCamStop(self.CamIndex)
+    #     if Error==0:
+    #         self.ShowErrorInformation()
+
+
+
+
+    #     Error = self.dll.VRmUsbCamFreeDeviceKey(byref(self.key))
+    #     if Error==0:
+    #         self.ShowErrorInformation()
+
+    #     Error = self.dll.VRmUsbCamCloseDevice(self.CamIndex)
+    #     if Error==0:
+    #         self.ShowErrorInformation()
+    #     print 'Cam stopped'
 
 
     '''
@@ -585,6 +615,41 @@ class VRmagicUSBCam_API(Camera_API):
             return self.exposureTime
 
 
+    def GetExposureTimeRange(self):
+        '''
+        Returns the adjustable range of the exposure time and sets the global variable.
+        '''
+
+        expotimeprops = ExpoTimeProps()
+        Error = self.dll.VRmUsbCamGetPropertyAttribsF(self.CamIndex, ExposureTimeAddress, byref(expotimeprops))
+        if Error==0:
+            self.ShowErrorInformation()
+            return None
+        else:
+            self.exposureRange = (expotimeprops.m_min,expotimeprops.m_max)
+            # print self.exposureRange, "Expo Time Range"
+            return self.exposureRange
+        del expotimeprops
+
+
+    def GetExposureTimeSteps(self):
+        '''
+        Returns the stepsize of the exposure time and sets the global variable.
+        '''
+
+        expotimeprops = ExpoTimeProps()
+        Error = self.dll.VRmUsbCamGetPropertyAttribsF(self.CamIndex, ExposureTimeAddress, byref(expotimeprops))
+        if Error==0:
+            self.ShowErrorInformation()
+            return None
+        else:
+            self.exposureSteps = expotimeprops.m_step
+            # print self.exposureSteps, "Expo Time Steps"
+            return self.exposureSteps
+        del expotimeprops
+
+
+
     def GetGainValue(self):
         '''
         This method returns the actual value of the gain and sets the global variable.
@@ -617,6 +682,42 @@ class VRmagicUSBCam_API(Camera_API):
             return self.gainValue
 
 
+    def GetGainRange(self):
+        '''
+        Returns the adjustable range of the gain and sets the global variable.
+        '''
+
+        gainprops = GainProps()
+        Error = self.dll.VRmUsbCamGetPropertyAttribsI(self.CamIndex, GainValueAddress, byref(gainprops))
+        if Error==0:
+            self.ShowErrorInformation()
+            return None
+        else:
+            self.gainRange = (gainprops.m_min,gainprops.m_max)
+            # print self.gainRange, "Gain Range"
+            return self.gainRange
+        del gainprops
+
+
+        
+    def GetGainSteps(self):
+        '''
+        Returns the sepsize of the gain and sets the global variable.
+        '''
+
+        gainprops = GainProps()
+        Error = self.dll.VRmUsbCamGetPropertyAttribsI(self.CamIndex, GainValueAddress, byref(gainprops))
+        if Error==0:
+            self.ShowErrorInformation()
+            return None
+        else:
+            self.gainSteps = gainprops.m_step
+            # print self.gainSteps, "Gain Steps"
+            return self.gainSteps
+        del gainprops
+
+        
+
 
 
 
@@ -642,6 +743,10 @@ if __name__=="__main__":
     # check.SetExposureTime(50.)
     # check.GetGainValue()
     # check.SetGainValue(34)
+    check.GetExposureTimeRange()
+    check.GetExposureTimeSteps()
+    check.GetGainRange()
+    check.GetGainSteps()
 
 
 

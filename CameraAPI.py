@@ -42,8 +42,10 @@ class Camera_API(object):
         self.saturationValue = None
         self.exposureTime = None
         self.exposureRange = None
+        self.exposureSteps = None
         self.gainValue = None
         self.gainRange = None
+        self.gainSteps = None
 
 
 
@@ -133,6 +135,16 @@ class Camera_API(object):
         return None
 
 
+    def GetExposureTimeSteps(self):
+        '''
+        Returns the stepsize of the exposure time and sets the global variable.
+        '''
+
+        print "This method is not implemented here!"
+
+        return None
+
+
     def GetGainValue(self):
         '''
         This method returns the actual value of the gain and sets the global variable.
@@ -163,6 +175,16 @@ class Camera_API(object):
         return None
 
 
+    def GetGainSteps(self):
+        '''
+        Returns the sepsize of the gain and sets the global variable.
+        '''
+
+        print "This method is not implemented here!"
+
+        return None
+
+
     def InitializeCamera(self):
         '''
         This method initializes a camera using methods implemented above.
@@ -173,10 +195,12 @@ class Camera_API(object):
         saturationvalue = self.GetSaturationValue()
         exposuretime = self.GetExposureTime()
         exposuretimerange = self.GetExposureTimeRange()
+        exposuretimesteps = selg.GetExposureTimeSteps()
         gainvalue = self.GetGainValue()
         gainrange = self.GetGainRange()
+        gainsteps = self.GetGainSteps()
 
-        return imagesize,saturationvalue,exposuretime,exposuretimerange,gainvalue,gainrange
+        return imagesize,saturationvalue,exposuretime,exposuretimerange,exposuretimesteps,gainvalue,gainrange,gainsteps
 
 
 
