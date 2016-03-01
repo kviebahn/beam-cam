@@ -85,11 +85,12 @@ def ellipse(x,sigmax,sigmay):
 
 
 
-def StartGUI(camera='Simulation is used'):
+def StartGUI():
     '''Starts the GUI'''
 
     def InitializeCam(camera,ui):
         '''Initializes the camera, update the exposure time and gain value fields'''
+        
         ExpoTime = camera.GetExposureTime()
         ui.exposureSpin.setProperty("value", ExpoTime)
         GainValue = camera.GetGainValue()
@@ -109,18 +110,86 @@ def StartGUI(camera='Simulation is used'):
             print 'A file with this name already exists!'
 
     def TestAction():
+        '''
+        Only for testing purposes!
+        '''
         print 'Test camera opened'
 
-    def ChangeCamera(camera,camindex=0):
+    def ChangeCamera(camera,ui,camindex=0):
+        '''
+        Stops old camera, starts new camera
+        '''
         camera.StopCamera()
         camera.StartCamera(camindex=camindex)
+        InitializeCam(camera,ui)
+
+    def SearchCameras(VRmMenu,ui):
+        '''
+        Searches all available supported cameras (of all supported types).
+        Creates menu.
+        Starts first available camera.
+        '''
+
+        global camera, VRmCam
+
+        totalcamnumber = 0
+        camfound = False
+
+        #################################################
+
+        VRmCam = VRmagicAPI.VRmagicUSBCam_API()
+        cameralist = VRmCam.CreateCameraList()
+        numbercams = len(cameralist)
+        totalcamnumber += numbercams
+        
+        if numbercams != 0:
+            if not camfound:
+                camera = VRmCam
+                camera.StartCamera(camindex=0)
+                InitializeCam(camera,ui)
+                camfound = True
+            for i in range(numbercams):
+                name = cameralist[i]
+                # testaction = QtGui.QAction(name, mainwin)
+                changeaction = VRmMenu.addAction(name)
+                mainwin.connect(changeaction,QtCore.SIGNAL('triggered()'), lambda i=i: ChangeCamera(camera,ui,camindex=i))
+                VRmMenu.addAction(changeaction)
+                
+        
+       
+        if not camfound:
+            camera='Simulation is used'
+            print 'ERROR -- No cameras found!!'
 
 
+    def RefreshCameras(VRmMenu,ui):
+        '''
+        Refreshes the camera list.
+        '''
+
+        global camera
+
+        camera.StopCamera()
+
+        for i in VRmMenu.actions():
+            VRmMenu.removeAction(i)
+
+        
+        SearchCameras(VRmMenu,ui)
+        InitializeCam(camera,ui)
+
+############################################################################################################
+############################################################################################################
 
 
-    global img, databuffer, rotangle
+    global img, databuffer, rotangle, camera, VRmCam
 
 
+    # Create objects of each cameratype
+    VRmCam = None
+    camera='Simulation is used'
+
+    
 
     '''
     ---------------------------------------------------------------------------------------------------
@@ -150,32 +219,38 @@ def StartGUI(camera='Simulation is used'):
     cameraMenu = menubar.addMenu('&Camera')
 
     refreshAction = QtGui.QAction('Refresh', cameraMenu)
+
     cameraMenu.addAction(refreshAction)
     cameraMenu.addSeparator()
+
     vrmagicMenu = cameraMenu.addMenu('VRmagic')
     
+
+    mainwin.connect(refreshAction,QtCore.SIGNAL('triggered()'), lambda: RefreshCameras(vrmagicMenu,ui))
     
 
 
 
-    if RealData:
+    # if RealData:
 
-        cameralist = camera.CreateCameraList()
-        numbercams = len(cameralist)
+    #     SearchCameras(vrmagicMenu)
+
+        # cameralist = camera.CreateCameraList()
+        # numbercams = len(cameralist)
         
-        if numbercams != 0:
-            for i in range(numbercams):
-                name = cameralist[i]
-                # testaction = QtGui.QAction(name, mainwin)
-                testaction = vrmagicMenu.addAction(name)
-                mainwin.connect(testaction,QtCore.SIGNAL('triggered()'), lambda i=i: ChangeCamera(camera,camindex=i))
-                vrmagicMenu.addAction(testaction)
+        # if numbercams != 0:
+        #     for i in range(numbercams):
+        #         name = cameralist[i]
+        #         # testaction = QtGui.QAction(name, mainwin)
+        #         testaction = vrmagicMenu.addAction(name)
+        #         mainwin.connect(testaction,QtCore.SIGNAL('triggered()'), lambda i=i: ChangeCamera(camera,camindex=i))
+        #         vrmagicMenu.addAction(testaction)
                 
         
-        else:
-            '''Create pop-out window!!'''
+        # else:
+        #     '''Create pop-out window!!'''
 
-            print 'ERROR -- No cameras found!!'
+        #     print 'ERROR -- No cameras found!!'
 
     # for i in range(3):
     #     name = 'Test ' + str(i)
@@ -199,6 +274,13 @@ def StartGUI(camera='Simulation is used'):
 
     ui = Ui_Form()
     ui.setupUi(win)
+
+    ################################################
+
+    if RealData:
+        SearchCameras(vrmagicMenu,ui)
+
+    ################################################
 
     # Create new image widget
     imagewidget = ui.plot
@@ -345,31 +427,38 @@ def StartGUI(camera='Simulation is used'):
     rotangle = 0
 
 
-
+##########################################################################################################
+##########################################################################################################
+##########################################################################################################
 
     '''Adapt to new API structure!!'''
 
-    # Check for available cameras and set up menu
+    # # Check for available cameras and set up menu
     if RealData:
 
-        cameralist = camera.CreateCameraList()
-        numbercams = len(cameralist)
+    #     cameralist = camera.CreateCameraList()
+    #     numbercams = len(cameralist)
         
-        if numbercams != 0:
-            for i in range(numbercams):
-                ui.choosecam.addItem(cameralist[i])
-                i += 1
-            # ui.choosecam.addItem('Test') #only for testing!!
+    #     if numbercams != 0:
+    #         for i in range(numbercams):
+    #             ui.choosecam.addItem(cameralist[i])
+    #             i += 1
+    #         # ui.choosecam.addItem('Test') #only for testing!!
 
-        else:
-            '''Create pop-out window!!'''
+    #     else:
+    #         '''Create pop-out window!!'''
 
-            print 'ERROR -- No cameras found!!'
+    #         print 'ERROR -- No cameras found!!'
 
-        CamIndex = ui.choosecam.currentIndex()
-        camera.StartCamera(camindex=CamIndex)
-        print camera.CamIndex.value, 'Camera Index'
+    #     CamIndex = ui.choosecam.currentIndex()
+    #     camera.StartCamera(camindex=CamIndex)
+    #     print camera.CamIndex.value, 'Camera Index'
         InitializeCam(camera,ui)
+
+
+#########################################################################################################
+#########################################################################################################
+#########################################################################################################
 
 
     # Show the window
@@ -451,7 +540,7 @@ def StartGUI(camera='Simulation is used'):
                 camera.SetExposureTime(ui.exposureSpin.value())
                 camera.SetGainValue(ui.gainSpin.value())
 
-            img.setImage(ImageArray.T)
+            img.setImage(ImageArray.T.astype(np.int32))
 
             if ui.connect.isChecked():
                 upddateroipos(databuffer[3,-1],databuffer[4,-1])
@@ -748,7 +837,7 @@ def StartGUI(camera='Simulation is used'):
     viewtimer = QtCore.QTimer()
 
     # When another camera is chosen, the method 'updatecam' is called
-    ui.choosecam.currentIndexChanged[int].connect(updatecam)
+    # ui.choosecam.currentIndexChanged[int].connect(updatecam)
 
     # When the 'Connect ROI' button is pressed, 'saveroisize' is called
     ui.connect.toggled.connect(saveroisize)
@@ -784,10 +873,10 @@ else:
     '''
     Add handling for different camera types!!
     '''
-    camera = VRmagicAPI.VRmagicUSBCam_API()
+    # camera = VRmagicAPI.VRmagicUSBCam_API()
     # camera.InitializeCam()
     # camera.StartCam()
-    StartGUI(camera)
+    StartGUI()
     camera.StopCamera()
 
 

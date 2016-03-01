@@ -133,16 +133,16 @@ class Ui_Form(object):
         # self.gridLayout.addWidget(self.rotanglelabel, 5, 1, 1, 1)
 
 
-        '''Defines the label for the camera'''
-        self.camlabel = QtGui.QLabel(Form)
-        self.camlabel.setObjectName(_fromUtf8("camlabel"))
-        self.gridLayout.addWidget(self.camlabel, 2, 2, 1, 1)
+        # '''Defines the label for the camera'''
+        # self.camlabel = QtGui.QLabel(Form)
+        # self.camlabel.setObjectName(_fromUtf8("camlabel"))
+        # self.gridLayout.addWidget(self.camlabel, 2, 2, 1, 1)
 
 
-        '''Defines the field to choose a camera'''
-        self.choosecam = QtGui.QComboBox()
-        self.choosecam.setObjectName(_fromUtf8("choosecam"))
-        self.gridLayout.addWidget(self.choosecam, 3, 2, 1, 1)
+        # '''Defines the field to choose a camera'''
+        # self.choosecam = QtGui.QComboBox()
+        # self.choosecam.setObjectName(_fromUtf8("choosecam"))
+        # self.gridLayout.addWidget(self.choosecam, 3, 2, 1, 1)
         # self.choosecam.addItem("Test 1")
         # self.choosecam.addItem("Test 2")
 
@@ -322,7 +322,7 @@ class Ui_Form(object):
         self.sigmaxlabel.setText(QtGui.QApplication.translate("Form", "Waist horizontal", None, QtGui.QApplication.UnicodeUTF8))
         self.sigmaylabel.setText(QtGui.QApplication.translate("Form", "Waist vertical", None, QtGui.QApplication.UnicodeUTF8))
         # self.rotanglelabel.setText(QtGui.QApplication.translate("Form", "Rotation angle", None, QtGui.QApplication.UnicodeUTF8))
-        self.camlabel.setText(QtGui.QApplication.translate("Form", "Camera", None, QtGui.QApplication.UnicodeUTF8))
+        # self.camlabel.setText(QtGui.QApplication.translate("Form", "Camera", None, QtGui.QApplication.UnicodeUTF8))
         self.camsettingslabel.setText(QtGui.QApplication.translate("Form", "Camera settings", None, QtGui.QApplication.UnicodeUTF8))
         self.exposurelabel.setText(QtGui.QApplication.translate("Form", "Exposure time [ms]", None, QtGui.QApplication.UnicodeUTF8))
         self.gainlabel.setText(QtGui.QApplication.translate("Form", "Gain", None, QtGui.QApplication.UnicodeUTF8))
