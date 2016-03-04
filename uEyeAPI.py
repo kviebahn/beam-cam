@@ -1517,7 +1517,7 @@ if __name__ == '__main__':
             #my_numpy_1 = np.zeros((height, width), dtype = np.uint16)
             #my_numpy_2 = np.zeros((height, width), dtype = np.uint16)
 	    #for i1 in xrange(10): 
-            err, my_address, my_id = Cam.is_SetAllocatedImageMem(my_numpy, height = 1280, width = 1024)
+            err, my_address, my_id = Cam.is_SetAllocatedImageMem(my_numpy, height = height, width = width)
             #err, my_address_1, my_id_1 = Cam.is_SetAllocatedImageMem(my_numpy_1)
             #err, my_address_2, my_id_2 = Cam.is_SetAllocatedImageMem(my_numpy_2)
             print my_address.contents
