@@ -540,7 +540,7 @@ def StartGUI():
                 camera.SetExposureTime(ui.exposureSpin.value())
                 camera.SetGainValue(ui.gainSpin.value())
 
-            img.setImage(ImageArray.T.astype(np.int32))
+            img.setImage(ImageArray.T.astype(float))
 
             if ui.connect.isChecked():
                 upddateroipos(databuffer[3,-1],databuffer[4,-1])
