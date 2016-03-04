@@ -1514,21 +1514,21 @@ if __name__ == '__main__':
 	    width, height = 1600, 1200
             
             my_numpy = np.zeros((height, width), dtype = np.uint16)
-            my_numpy_1 = np.zeros((height, width), dtype = np.uint16)
-            my_numpy_2 = np.zeros((height, width), dtype = np.uint16)
+            #my_numpy_1 = np.zeros((height, width), dtype = np.uint16)
+            #my_numpy_2 = np.zeros((height, width), dtype = np.uint16)
 	    #for i1 in xrange(10): 
             err, my_address, my_id = Cam.is_SetAllocatedImageMem(my_numpy)
-            err, my_address_1, my_id_1 = Cam.is_SetAllocatedImageMem(my_numpy_1)
-            err, my_address_2, my_id_2 = Cam.is_SetAllocatedImageMem(my_numpy_2)
+            #err, my_address_1, my_id_1 = Cam.is_SetAllocatedImageMem(my_numpy_1)
+            #err, my_address_2, my_id_2 = Cam.is_SetAllocatedImageMem(my_numpy_2)
             print my_address.contents
-            print my_address_1.contents
-            print my_address_2.contents
+            #print my_address_1.contents
+            #print my_address_2.contents
 
             print my_id
                 
             Cam.is_SetImageMem(my_address, my_id) # makes the allocated memory active
-            Cam.is_SetImageMem(my_address_1, my_id_1) # makes the allocated memory active
-            Cam.is_SetImageMem(my_address_2, my_id_2) # makes the allocated memory active
+            #Cam.is_SetImageMem(my_address_1, my_id_1) # makes the allocated memory active
+            #Cam.is_SetImageMem(my_address_2, my_id_2) # makes the allocated memory active
                
 
             #fig = plt.figure()
@@ -1537,8 +1537,8 @@ if __name__ == '__main__':
 
             Cam.is_CaptureVideo(20)
             
-#	    for i0 in xrange(4):
-#            	print my_numpy
+	    for i0 in xrange(4):
+            	print my_numpy
 	    time.sleep(1)    	
 
 	    Cam.is_GetFramesPerSecond()
