@@ -53,6 +53,7 @@ For RealData = False a simple simulation of a gaussian beam profile is started f
 For RealData = True the USB hubs are scanned for available cameras. The camera can be choosen in the
 according menu window. The images of the choosen camera are displayed and can be analysed.
 '''
+global RealData
 RealData = True
 
 
@@ -97,7 +98,7 @@ class Ui_Window(object):
         self.mainwin = QtGui.QMainWindow()
 
         self.menubar = QtGui.QMenuBar(self.mainwin)
-        self.CreateMenuBar()
+        self.cameramenu = self.CreateMenuBar()
 
         self.win = QtGui.QWidget()
 
@@ -132,20 +133,20 @@ class Ui_Window(object):
         self.view.addItem(self.contour)
         self.refcontour = self.CreateRefContour()
         self.view.addItem(self.refcontour)
-        self.vline,self.hline = self.CreateCrossHair()
-        view.addItem(self.vLine, ignoreBounds=True)
-        view.addItem(self.hLine, ignoreBounds=True)
+        self.vLine,self.hLine = self.CreateCrossHair()
+        self.view.addItem(self.vLine, ignoreBounds=True)
+        self.view.addItem(self.hLine, ignoreBounds=True)
 
 
-        self.p3 = CreateSumHorizontalPlot()
-        self.amphist = CreateAmplitudeHist()
-        self.timeplot = CreateTimePlot()
+        self.p3 = self.CreateSumHorizontalPlot()
+        self.amphist = self.CreateAmplitudeHist()
+        self.timeplot = self.CreateTimePlot()
 
         # Go to the next row
-        imagewidget.nextRow()
+        self.imagewidget.nextRow()
 
-        self.p2 = CreateSumVerticalPlot()
-        self.text = CreateBeamPropsTextBox()
+        self.p2 = self.CreateSumVerticalPlot()
+        self.text = self.CreateBeamPropsTextBox()
 
 
 
@@ -168,7 +169,7 @@ class Ui_Window(object):
 
     def CreateMenuBar(self):
         '''
-        Creates the menu bar.
+        Creates the menu bar and returns the camera menu.
         '''
 
         fileMenu = self.menubar.addMenu('&File')
@@ -177,18 +178,21 @@ class Ui_Window(object):
         fileMenu.addAction(exitAction)
 
         cameraMenu = self.menubar.addMenu('&Camera')
-        refreshAction = QtGui.QAction('Refresh', cameraMenu)
-        cameraMenu.addAction(refreshAction)
-        cameraMenu.addSeparator()
+        # refreshAction = QtGui.QAction('Refresh', cameraMenu)
+        # cameraMenu.addAction(refreshAction)
+        # cameraMenu.addSeparator()
 
-        vrmagicMenu = cameraMenu.addMenu('VRmagic')
+        
         
 
         ### TODO: Outsource this menu in other class!!!
-        self.mainwin.connect(refreshAction,QtCore.SIGNAL('triggered()'), lambda: RefreshCameras(vrmagicMenu,self.ui))
+        # vrmagicMenu = cameraMenu.addMenu('VRmagic')
+        # self.mainwin.connect(refreshAction,QtCore.SIGNAL('triggered()'), lambda: RefreshCameras(vrmagicMenu,self.ui))
         ###############################################
 
         self.mainwin.setMenuBar(self.menubar)
+
+        return cameraMenu
 
 
     def SetRangeViewbox(self):
@@ -283,7 +287,7 @@ class Ui_Window(object):
         vLine = pg.InfiniteLine(angle=90, movable=False)
         hLine = pg.InfiniteLine(angle=0, movable=False)
 
-        return vline,hline
+        return vLine,hLine
 
     def CreateSumHorizontalPlot(self):
         '''
@@ -359,7 +363,11 @@ class Ui_Window(object):
         return text
 
 
-
+############################################################################################################
+############################################################################################################
+############################################################################################################
+############################################################################################################
+############################################################################################################
 
 
 
@@ -375,20 +383,33 @@ class App_Launcher(object):
 
 
     def __init__(self):
+
+        self.gui = Ui_Window()
+        self.VRmMenu = self.InitializeCamSearch()
         
         self.camera = None
+        self.imagearray = None
+        self.databuffer = self.CreateDataBuffer()
+        self.rotangle = 0
+        self.starttime = time.time()
+        self.origroisize = None
+
+        #???
+        # self.VRmCam = None
+
+        self.SearchCameras()
 
 
 
 
 
-    def InitializeCam(self,ui):
+    def InitializeCam(self):
         '''Initializes the camera, update the exposure time and gain value fields'''
         
         ExpoTime = self.camera.GetExposureTime()
-        ui.exposureSpin.setProperty("value", ExpoTime)
+        self.gui.ui.exposureSpin.setProperty("value", ExpoTime)
         GainValue = self.camera.GetGainValue()
-        ui.gainSpin.setProperty("value", GainValue)
+        self.gui.ui.gainSpin.setProperty("value", GainValue)
         # Switch off status LED
         # camera.SetStatusLED(camera.CamIndex,False)
 
@@ -404,22 +425,41 @@ class App_Launcher(object):
             print 'A file with this name already exists!'
 
 
-    def ChangeCamera(self,ui,camindex=0):
+    def ChangeCamera(self,camindex=0):
         '''
         Stops old camera, starts new camera
+        TODO: Adapt for multiple camera types
         '''
         self.camera.StopCamera()
         self.camera.StartCamera(camindex=camindex)
-        InitializeCam(self.camera,ui)
+        InitializeCam()
 
-    def SearchCameras(self,+VRmMenu,ui):
+
+    def InitializeCamSearch(self):
+        '''
+        This method initializes the camera menu and return the menu for each camera type.
+        TODO: Adapt for multiple camera types
+        '''
+
+        refreshAction = QtGui.QAction('Refresh', self.gui.cameramenu)
+        self.gui.cameramenu.addAction(refreshAction)
+        self.gui.cameramenu.addSeparator()
+
+        
+        vrmagicMenu = self.gui.cameramenu.addMenu('VRmagic')
+
+        self.gui.mainwin.connect(refreshAction,QtCore.SIGNAL('triggered()'), lambda: self.RefreshCameras())
+
+        return vrmagicMenu
+
+
+    def SearchCameras(self):
         '''
         Searches all available supported cameras (of all supported types).
         Creates menu.
         Starts first available camera.
+        TODO: Adapt for multiple camera types
         '''
-
-        global VRmCam
 
         totalcamnumber = 0
         camfound = False
@@ -431,18 +471,21 @@ class App_Launcher(object):
         numbercams = len(cameralist)
         totalcamnumber += numbercams
         
+
+
+        # ADD HANDLING IF NO CAMERA IS AVAILABLE/PLUGGED TO THE PC
         if numbercams != 0:
             if not camfound:
-                camera = VRmCam
-                camera.StartCamera(camindex=0)
-                InitializeCam(camera,ui)
+                self.camera = VRmCam
+                self.camera.StartCamera(camindex=0)
+                self.InitializeCam()
                 camfound = True
             for i in range(numbercams):
                 name = cameralist[i]
                 # testaction = QtGui.QAction(name, mainwin)
-                changeaction = VRmMenu.addAction(name)
-                mainwin.connect(changeaction,QtCore.SIGNAL('triggered()'), lambda i=i: ChangeCamera(camera,ui,camindex=i))
-                VRmMenu.addAction(changeaction)
+                changeaction = self.VRmMenu.addAction(name)
+                self.gui.mainwin.connect(changeaction,QtCore.SIGNAL('triggered()'), lambda i=i: self.ChangeCamera(camindex=i))
+                self.VRmMenu.addAction(changeaction)
                 
         
        
@@ -451,58 +494,405 @@ class App_Launcher(object):
             print 'ERROR -- No cameras found!!'
 
 
-    def RefreshCameras(self,VRmMenu,ui):
+    def RefreshCameras(self):
         '''
         Refreshes the camera list.
+        TODO: Adapt for multiple camera types
         '''
 
 
         self.camera.StopCamera()
 
-        for i in VRmMenu.actions():
-            VRmMenu.removeAction(i)
+        for i in self.VRmMenu.actions():
+            self.VRmMenu.removeAction(i)
 
         
-        SearchCameras(VRmMenu,ui)
-        InitializeCam(self.camera,ui)
+        self.SearchCameras()
+        self.InitializeCam()
 
 
+    def CreateDataBuffer(self):
+        '''
+        Creates the data buffer needed for time evolution plots.
+        the databuffer is returned.
+        '''
+
+        buffersize = 40000 # Change this number for showing a longer period in time evolution plots
+        databuffer = np.zeros([7,buffersize])
+        bufferrange = np.arange(buffersize)
+        databuffer[0,:] = bufferrange
+
+        return databuffer
+
+    #################################################################################################
+    #################################################################################################
+    # Methods for updating the image and the analysis plots.
+    #################################################################################################
+    #################################################################################################
 
 
-
-
-
-
-
-
-
+    def updateview(self):
+        '''
+        This method upadates the image that is shown. 
+        The orientation chosen is taken into account and the ROI boundaries are set properly.
+        When the 'Hold' Button is pressed, the image is not updated.
+        After updating the image, the method 'updateRoi' is called.
+        '''
 
         
+        hold = False
+        hold = self.gui.ui.hold.isChecked()
+
+        if hold==False:
+            if RealData==False:
+                simulation.ChooseImage()
+                self.imagearray = simulation.image
+            else:
+                try:
+                    self.camera.GetNextImage()
+                    self.imagearray = self.camera.GiveImage()
+                except: # Show last image if grab failed -> Does not work (?)
+                    self.imagearray = np.rot90(imagearray,-1*self.rotangle)
+
+            self.imagearray = np.rot90(self.imagearray,self.rotangle)
+            
+            if self.rotangle==0 or self.rotangle==2:
+                # view.setRange(QtCore.QRectF(0, 0, 754, 480))
+                self.gui.ui.x0Spin.setRange(0.,754.)
+                self.gui.ui.y0Spin.setRange(0.,480.)
+                bounds = QtCore.QRectF(0,0,753,479)
+                self.gui.roi.maxBounds = bounds
+                roisize = self.gui.roi.size()
+                roipos = self.gui.roi.pos()
+
+                # ADAPT TO IMAGE SIZE!!!!!
+                if roisize[1] >= 480:
+                    # print roisize, roipos, 'ROI'
+                    self.gui.roi.setSize([200,200],finish=False)
+                if roipos[1] >= (480-roisize[1]):
+                    # print roisize, roipos, 'ROI'
+                    self.gui.roi.setPos([200,200],finish=False)
+                    self.gui.roi.setSize([200,200],finish=False)
+                    
+
+                
+            elif self.rotangle==1 or self.rotangle==3:
+                # view.setRange(QtCore.QRectF(0, 0, 480, 754))
+                self.gui.ui.x0Spin.setRange(0.,480.)
+                self.gui.ui.y0Spin.setRange(0.,754.)
+                bounds = QtCore.QRectF(0,0,479,753)
+                self.gui.roi.maxBounds = bounds
+                roisize = self.gui.roi.size()
+                roipos = self.gui.roi.pos()
+                if roisize[0] >= 480:
+                    self.gui.roi.setSize([200,200],finish=False)
+                if roipos[0] >= (480-roisize[0]):
+                    self.gui.roi.setPos([200,200],finish=False)
+                    self.guiroi.setSize([200,200],finish=False)
+
+
+            '''
+            To implement: Set only if value is changed!!
+            '''  
+
+            if RealData:
+                self.camera.SetExposureTime(self.gui.ui.exposureSpin.value())
+                self.camera.SetGainValue(self.gui.ui.gainSpin.value())
+
+            self.gui.img.setImage(self.imagearray.T.astype(float))
+
+            if self.gui.ui.connect.isChecked():
+                sel.upddateroipos(self.databuffer[3,-1],self.databuffer[4,-1])
+            
+            self.updateRoi()
+
+        else:
+            if RealData:
+                self.camera.GetNextImage()
 
 
 
+    def updaterotangleccw(self):
+        '''
+        In this method the variable 'rotangle', indicating the rotation of the image is
+        shifted forward by one in the counterclockwise direction.
+        '''
+        
+        self.rotangle = self.rotangle + 3
+        self.rotangle = self.rotangle % 4
+
+
+    def updaterotanglecw(self):
+        '''
+        In this method the variable 'rotangle', indicating the rotation of the image is
+        shifted forward by one in the clockwise direction.
+        '''
+
+        self.rotangle = self.rotangle + 1
+        self.rotangle = self.rotangle % 4
+
+
+    def updateRoi(self):
+        '''
+        In this method the Roi data is updated. It is called when the Roi position and/or shape changes
+        and when the image is updated. The ROI data is summed up in vertical and horizontal directions 
+        and plotted in the according diagrams. The total sum of the ROI is seen as Amplitude and displayed
+        in the plot. A gaussian is fitted to the sums in horizontal and vertical direction. The fit results 
+        are used to plot the peak position and contour. The beam properties are stored in a buffer and can
+        be plotted in the time evolution plot.
+        '''
+
+        # Get ROI data
+        selected = self.gui.roi.getArrayRegion(self.imagearray.T, self.gui.img)
+
+        # Calculate amplitude
+        amplitude = selected.sum()
+        
+        # Shift buffer one step forward and store amplitude and time stamp
+        self.databuffer[1:,:-1] = self.databuffer[1:,1:]
+        actualtime = time.time()
+        self.databuffer[1,-1] = actualtime - self.starttime
+        self.databuffer[2,-1] = amplitude
+
+
+        # Plot sum in horizontal direction and fit gaussian
+        datahor = selected.sum(axis=1)
+        self.gui.p2.plot(datahor, clear=True)
+        FittedParamsHor = MatTools.FitGaussian(datahor)[0]
+        xhor = np.arange(datahor.size)
+
+        if self.gui.ui.fitCheck.isChecked():
+            self.gui.p2.plot(MatTools.gaussian(xhor,*FittedParamsHor), pen=(0,255,0))
+
+        # Plot amplitude
+        xamp = np.array([1.,2.])
+        yamp = np.array([amplitude])
+        self.gui.amphist.plot(xamp, yamp, stepMode=True, clear=True, fillLevel=0, brush=(0,0,255,150))
+
+        # Plot sum in vertical direction and fit gaussian, save fit results in buffer and show in text box
+        datavert = selected.sum(axis=0)
+        self.gui.p3.plot(datavert, clear=True).rotate(90)
+        FittedParamsVert = MatTools.FitGaussian(datavert)[0]
+        xvert = np.arange(datavert.size)
+
+        if self.gui.ui.fitCheck.isChecked():
+            self.gui.p3.plot(MatTools.gaussian(xvert,*FittedParamsVert), pen=(0,255,0)).rotate(90)
+            poshor = FittedParamsHor[2]+self.gui.roi.pos()[0]
+            posvert = FittedParamsVert[2]+self.gui.roi.pos()[1]
+            waistx = FittedParamsHor[1]
+            waisty = FittedParamsVert[1]
+
+            self.databuffer[3,-1] = poshor
+            self.databuffer[4,-1] = posvert
+            self.databuffer[5,-1] = waistx
+            self.databuffer[6,-1] = waisty
+
+            self.updatetext(amplitude,poshor,posvert,waistx,waisty)
+
+
+        if self.gui.ui.trackCheck.isChecked():
+
+            
+            # Adjust cross hair
+            self.gui.hLine.setPos(FittedParamsVert[2]+self.gui.roi.pos()[1])
+            self.gui.vLine.setPos(FittedParamsHor[2]+self.gui.roi.pos()[0])
+
+            self.gui.vLine.show()
+            self.gui.hLine.show()
+
+            # Plot peak
+            pos = np.array([[(FittedParamsHor[2]+self.gui.roi.pos()[0]),(FittedParamsVert[2]+self.gui.roi.pos()[1])]])           
+            self.gui.peak.setData(pos,clear=True)
+
+            # Plot contour
+            x = np.linspace(-(FittedParamsHor[1]),(FittedParamsHor[1]),1000)
+            sigmax = FittedParamsHor[1]
+            sigmay = FittedParamsVert[1]
+            y = ellipse(x,sigmax,sigmay)
+
+            x = np.append(x,-x)
+            y = np.append(y,-y)
+            
+            x += FittedParamsHor[2]+self.gui.roi.pos()[0]
+            y += FittedParamsVert[2]+self.gui.roi.pos()[1]
+            # X,Y = np.meshgrid(x,y)
+            # contour.clear()
+            self.gui.contour.setData(x,y,clear=True)
+
+        else:
+            # Hide cross hair, peak and contour if 'Track beam' is not checked
+            self.gui.vLine.hide()
+            self.gui.hLine.hide()
+            self.gui.contour.clear()
+            self.gui.peak.clear()
+
+        #When checked, the reference beam peak and contour is plotted   
+        if self.gui.ui.refCheck.isChecked():
+
+            peakposition = np.array([[self.gui.ui.x0Spin.value(),self.gui.ui.y0Spin.value()]])
+            self.gui.peakpos.setData(peakposition,clear=True)
+
+
+            sigmax = self.gui.ui.sigmaxSpin.value()
+            sigmay = self.gui.ui.sigmaySpin.value()
+            x = np.linspace(-(sigmax),(sigmax),1000)
+            y = ellipse(x,sigmax,sigmay)
+
+            x = np.append(x,-x)
+            y = np.append(y,-y)
+            
+            x += self.gui.ui.x0Spin.value()
+            y += self.gui.ui.y0Spin.value()
+            # X,Y = np.meshgrid(x,y)
+            # contour.clear()
+            self.gui.refcontour.setData(x,y,clear=True)
+
+        else:
+            self.gui.peakpos.clear()
+            self.gui.refcontour.clear()
+
+
+        # Update the time evolution plot
+        self.updatetimescrolling()
+
+
+    def updatetext(self,amplitude,x,y,waistx,waisty):
+        '''
+        The textbox giving information about the beam is updated.
+        '''
+
+        self.gui.text.setHtml('<div style="text-align: center"><span style="color: #FFF; font-size: 16pt;">Beam Properties</span><br>\
+            <span style="color: #FFF; font-size: 10pt;">Amplitude: %0.2f</span><br>\
+            <span style="color: #FFF; font-size: 10pt;">Horizontal Position: %0.2f</span><br>\
+            <span style="color: #FFF; font-size: 10pt;">Vertical Position: %0.2f</span><br>\
+            <span style="color: #FFF; font-size: 10pt;">Horizontal Waist: %0.2f</span><br>\
+            <span style="color: #FFF; font-size: 10pt;">Vertical Waist: %0.2f</span></div>' %(amplitude,x,y,waistx,waisty))
+
+
+    def updatetimescrolling(self):
+        '''
+        The time evolution plot is updated.
+        '''
+
+        timescale = self.databuffer[1,:] - self.databuffer[1,-1]
+
+        if self.gui.ui.fitCheck.isChecked():
+            self.gui.ui.poshorRadio.setEnabled(True)
+            self.gui.ui.posvertRadio.setEnabled(True)
+            self.gui.ui.waisthorRadio.setEnabled(True)
+            self.gui.ui.waistvertRadio.setEnabled(True)
+            self.gui.ui.distRadio.setEnabled(True)
+            if self.gui.ui.ampRadio.isChecked():
+                self.gui.timeplot.plot(timescale,self.databuffer[2,:],clear=True)
+                self.gui.timeplot.setLabel('left', "Amplitude", units='')
+
+            if self.gui.ui.poshorRadio.isChecked():
+                self.gui.timeplot.plot(timescale,self.databuffer[3,:],clear=True)
+                self.gui.timeplot.setLabel('left', "Horizontal Position", units='px')
+
+            if self.gui.ui.posvertRadio.isChecked():
+                self.gui.timeplot.plot(timescale,self.databuffer[4,:],clear=True)
+                self.gui.timeplot.setLabel('left', "Vertical Position", units='px')
+
+            if self.gui.ui.waisthorRadio.isChecked():
+                self.gui.timeplot.plot(timescale,self.databuffer[5,:],clear=True)
+                self.gui.timeplot.setLabel('left', "Horizontal Waist", units='px')
+
+            if self.gui.ui.waistvertRadio.isChecked():
+                self.gui.timeplot.plot(timescale,self.databuffer[6,:],clear=True)
+                self.gui.timeplot.setLabel('left', "Vertical Waist", units='px')
+
+            if self.gui.ui.distRadio.isChecked():
+                distance = np.sqrt((self.databuffer[3,:]-self.gui.ui.x0Spin.value())**2+\
+                    (self.databuffer[4,:]-self.gui.ui.y0Spin.value())**2)
+                self.gui.timeplot.plot(timescale,distance,clear=True)
+                self.gui.timeplot.setLabel('left', "Distance to reference peak", units='px')
+
+        else:
+            self.gui.ui.ampRadio.setChecked(True)
+            self.gui.timeplot.plot(timescale,self.databuffer[2,:],clear=True)
+            self.gui.timeplot.setLabel('left', "Amplitude", units='')
+            self.gui.ui.poshorRadio.setEnabled(False)
+            self.gui.ui.posvertRadio.setEnabled(False)
+            self.gui.ui.waisthorRadio.setEnabled(False)
+            self.gui.ui.waistvertRadio.setEnabled(False)
+            self.gui.ui.distRadio.setEnabled(False)
+
+
+    def saveroisize(self):
+        '''
+        The ROI position is saved.
+        '''
+        
+        self.origroisize = self.gui.roi.size()
+
+
+    def upddateroipos(self,x,y):
+        '''
+        The ROI position is updated. The bounds are respected.
+        '''
+        
+        imagesize = self.imagerray.shape
+        xpos = x-int(self.origroisize[0]/2.)
+        xsize = self.origroisize[0]
+        ysize = self.origroisize[1]
+        if xpos < 0:
+            xpos = 0
+        ypos = y-int(self.origroisize[1]/2.)
+        if ypos < 0:
+            ypos = 0
+        if xpos + self.origroisize[0] >= imagesize[1]:
+            xsize = imagesize[1] - xpos - 1
+        if ypos + self.origroisize[1] >= imagesize[0]:
+            ysize = imagesize[0] - ypos - 1
+
+
+        self.gui.roi.setPos([xpos,ypos],finish=False)
+        self.gui.roi.setSize([xsize,ysize],finish=False)
+        # roi.stateChanged()
+
+
+    def runApp(self):
+        '''
+        Run the beam profiling application.
+        '''
+
+        if RealData==False:
+            simulation = Sim.GaussBeamSimulation()
+            simulation.CreateImages()
+
+        # Start timer for the loop
+        viewtimer = QtCore.QTimer()
+
+        # When the 'Connect ROI' button is pressed, 'saveroisize' is called
+        self.gui.ui.connect.toggled.connect(self.saveroisize)
+    
+        # When the ROI region has been changed, 'updateRoi' is called
+        self.gui.roi.sigRegionChangeFinished.connect(self.updateRoi)
+
+        # When the 'Rotate counterclockwise' button is clicked, call 'updaterotangleccw'
+        self.gui.ui.rotccw.clicked.connect(self.updaterotangleccw)
+
+        # When the 'Rotate clockwise' button is clicked, call 'updaterotanglecw'
+        self.gui.ui.rotcw.clicked.connect(self.updaterotanglecw)
+
+        # When the timer is timed out, 'updateview' is called
+        viewtimer.timeout.connect(self.updateview)
+    
+        # Start the timer: time out after 0 ms
+        viewtimer.start(0)
+
+        # When the GUI is closed: stop the timer
+        self.gui.app.exec_()
+        viewtimer.stop()
+        if RealData:
+            self.camera.StopCamera()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if __name__=="__main__":
+    check = App_Launcher()
+    check.runApp()
 
 
 
