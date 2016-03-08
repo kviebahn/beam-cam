@@ -53,8 +53,6 @@ For RealData = False a simple simulation of a gaussian beam profile is started f
 For RealData = True the USB hubs are scanned for available cameras. The camera can be choosen in the
 according menu window. The images of the choosen camera are displayed and can be analysed.
 '''
-global RealData
-RealData = True
 
 
 
@@ -98,7 +96,7 @@ class Ui_Window(object):
         self.mainwin = QtGui.QMainWindow()
 
         self.menubar = QtGui.QMenuBar(self.mainwin)
-        self.cameramenu = self.CreateMenuBar()
+        self.cameramenu, self.settingsmenu = self.CreateMenuBar()
 
         self.win = QtGui.QWidget()
 
@@ -147,6 +145,7 @@ class Ui_Window(object):
 
         self.p2 = self.CreateSumVerticalPlot()
         self.text = self.CreateBeamPropsTextBox()
+        self.satwarning = self.CreateSaturationWarningTextBox()
 
 
 
@@ -178,6 +177,7 @@ class Ui_Window(object):
         fileMenu.addAction(exitAction)
 
         cameraMenu = self.menubar.addMenu('&Camera')
+        settingsMenu = self.menubar.addMenu('&Settings')
         # refreshAction = QtGui.QAction('Refresh', cameraMenu)
         # cameraMenu.addAction(refreshAction)
         # cameraMenu.addSeparator()
@@ -192,7 +192,7 @@ class Ui_Window(object):
 
         self.mainwin.setMenuBar(self.menubar)
 
-        return cameraMenu
+        return cameraMenu, settingsMenu
 
 
     def SetRangeViewbox(self):
@@ -363,6 +363,46 @@ class Ui_Window(object):
         return text
 
 
+    def CreateSaturationWarningTextBox(self):
+        '''
+        Create text box used for saturation warnings
+        '''
+
+        text = pg.TextItem(text="Warning: Saturated pixels", color='w', anchor=(0.,0.), border='w', fill='w')
+        textbox = self.imagewidget.addPlot()
+        textbox.addItem(text)
+        textbox.setMaximumWidth(150)
+        textbox.setMaximumHeight(200)
+        textbox.setMinimumWidth(200)
+        textbox.setMinimumHeight(200)
+        textbox.hideAxis('left')
+        textbox.hideAxis('bottom')
+        text.setTextWidth(140)
+        text.setPos(0.02,0.75)
+
+        font = QtGui.QFont()
+        font.setPointSize(20)
+        text.setFont(font)
+        return text
+    
+
+
+    # def MessageNoCamFound(self):
+    #     '''
+    #     Creates the messagebox that is shown when no camera is found.
+    #     '''
+
+
+    #     message = QtGui.QMessageBox()
+    #     message.setIcon(QtGui.QMessageBox.Warning)
+    #     message.setText("No cameras found!")
+    #     message.setInformativeText("Please connect a supported camera to the computer and press the Search button.")
+    #     message.setStandardButtons(QtGui.QMessageBox.Close)
+
+    #     retval = message.exec_()
+    #     print retval, "Retval"
+
+
 ############################################################################################################
 ############################################################################################################
 ############################################################################################################
@@ -384,8 +424,12 @@ class App_Launcher(object):
 
     def __init__(self):
 
+        self.RealData = True
+
+
         self.gui = Ui_Window()
         self.VRmMenu = self.InitializeCamSearch()
+        self.InitializeSettings()
         
         self.camera = None
         self.imagearray = None
@@ -393,11 +437,20 @@ class App_Launcher(object):
         self.rotangle = 0
         self.starttime = time.time()
         self.origroisize = None
+        self.simulation = None
 
+
+        # Start timer for the loop
+        self.viewtimer = QtCore.QTimer()
         #???
         # self.VRmCam = None
 
+        self.saturationvalue = None
+        self.saturationthreshold = 5
+
         self.SearchCameras()
+
+        self.runApp()
 
 
 
@@ -410,6 +463,8 @@ class App_Launcher(object):
         self.gui.ui.exposureSpin.setProperty("value", ExpoTime)
         GainValue = self.camera.GetGainValue()
         self.gui.ui.gainSpin.setProperty("value", GainValue)
+
+        self.saturationvalue = self.camera.GetSaturationValue()
         # Switch off status LED
         # camera.SetStatusLED(camera.CamIndex,False)
 
@@ -432,7 +487,7 @@ class App_Launcher(object):
         '''
         self.camera.StopCamera()
         self.camera.StartCamera(camindex=camindex)
-        InitializeCam()
+        self.InitializeCam()
 
 
     def InitializeCamSearch(self):
@@ -453,6 +508,24 @@ class App_Launcher(object):
         return vrmagicMenu
 
 
+    def InitializeSettings(self):
+
+        saturationMenu = self.gui.settingsmenu.addMenu('Saturation')
+        thresholdAction = QtGui.QAction('Threshold',saturationMenu)
+        saturationMenu.addAction(thresholdAction)
+
+        self.gui.mainwin.connect(thresholdAction,QtCore.SIGNAL('triggered()'), lambda: self.AdjustSaturationThreshold())
+
+    def AdjustSaturationThreshold(self):
+
+        number,ok = QtGui.QInputDialog.getInt(self.gui.win,"Adjust Saturation Threshold","Enter new minimal pixel number:",value=self.saturationthreshold)
+        
+        if ok:
+            self.saturationthreshold = number
+
+
+
+
     def SearchCameras(self):
         '''
         Searches all available supported cameras (of all supported types).
@@ -471,7 +544,7 @@ class App_Launcher(object):
         numbercams = len(cameralist)
         totalcamnumber += numbercams
         
-
+        self.RealData = True
 
         # ADD HANDLING IF NO CAMERA IS AVAILABLE/PLUGGED TO THE PC
         if numbercams != 0:
@@ -488,10 +561,12 @@ class App_Launcher(object):
                 self.VRmMenu.addAction(changeaction)
                 
         
-       
+        if camfound:
+            self.viewtimer.start()
         if not camfound:
-            camera='Simulation is used'
-            print 'ERROR -- No cameras found!!'
+            self.MessageNoCamFound()
+            self.camera = None
+            # print 'ERROR -- No cameras found!!'
 
 
     def RefreshCameras(self):
@@ -500,15 +575,64 @@ class App_Launcher(object):
         TODO: Adapt for multiple camera types
         '''
 
+        if self.camera != None:
+            self.viewtimer.stop()
+            if self.RealData:
+                self.camera.StopCamera()
 
-        self.camera.StopCamera()
-
-        for i in self.VRmMenu.actions():
-            self.VRmMenu.removeAction(i)
+            for i in self.VRmMenu.actions():
+                self.VRmMenu.removeAction(i)
 
         
         self.SearchCameras()
         self.InitializeCam()
+
+
+
+
+    def StartDemo(self):
+        '''
+        Starts a demo.
+        '''
+
+        self.RealData = False
+        self.camera = "Simulation in use"
+        self.simulation = Sim.GaussBeamSimulation()
+        self.simulation.CreateImages()
+        self.viewtimer.start(0)
+
+
+
+
+
+    def MessageNoCamFound(self):
+        '''
+        Creates the messagebox that is shown when no camera is found.
+        '''
+
+
+        message = QtGui.QMessageBox()
+        message.setIcon(QtGui.QMessageBox.Warning)
+        message.setText("No cameras found!")
+        message.setInformativeText("Please connect a supported camera to the computer and press the Search button.")
+        message.setStandardButtons(QtGui.QMessageBox.Close)
+        # message.addButton(QtGui.QMessageBox.Yes)
+        searchbutton = message.addButton("Search",QtGui.QMessageBox.YesRole)
+        # message.connect(searchbutton,QtCore.SIGNAL('clicked()'),self.RefreshCameras)
+        demobutton = message.addButton("Start Demo",QtGui.QMessageBox.NoRole)
+
+
+
+        retval = message.exec_()
+        if message.clickedButton() == searchbutton:
+            print "Search cameras!!"
+            self.SearchCameras()
+
+        if message.clickedButton() == demobutton:
+            print "Start Demo!!"
+            self.StartDemo()
+            
+        # print retval, "Retval"
 
 
     def CreateDataBuffer(self):
@@ -523,6 +647,27 @@ class App_Launcher(object):
         databuffer[0,:] = bufferrange
 
         return databuffer
+
+
+
+    def CheckSaturation(self):
+        '''
+        Checks if pixel are saturated.
+        '''
+
+        if self.camera != None:
+            if self.RealData:
+                satpxl = np.where(self.imagearray == self.saturationvalue)
+                # print satpxl, "Sat pxl"
+                if len(satpxl[0]) > self.saturationthreshold:
+                    self.gui.satwarning.setText("Warning: Pixel saturated!",color='r')
+                else:
+                    self.gui.satwarning.setText("Warning: Pixel saturated!",color='w')
+
+        else:
+            pass
+
+
 
     #################################################################################################
     #################################################################################################
@@ -544,9 +689,9 @@ class App_Launcher(object):
         hold = self.gui.ui.hold.isChecked()
 
         if hold==False:
-            if RealData==False:
-                simulation.ChooseImage()
-                self.imagearray = simulation.image
+            if self.RealData==False:
+                self.simulation.ChooseImage()
+                self.imagearray = self.simulation.image
             else:
                 try:
                     self.camera.GetNextImage()
@@ -595,11 +740,12 @@ class App_Launcher(object):
             To implement: Set only if value is changed!!
             '''  
 
-            if RealData:
+            if self.RealData:
                 self.camera.SetExposureTime(self.gui.ui.exposureSpin.value())
                 self.camera.SetGainValue(self.gui.ui.gainSpin.value())
 
             self.gui.img.setImage(self.imagearray.T.astype(float))
+            self.CheckSaturation()
 
             if self.gui.ui.connect.isChecked():
                 sel.upddateroipos(self.databuffer[3,-1],self.databuffer[4,-1])
@@ -607,7 +753,7 @@ class App_Launcher(object):
             self.updateRoi()
 
         else:
-            if RealData:
+            if self.RealData:
                 self.camera.GetNextImage()
 
 
@@ -857,12 +1003,11 @@ class App_Launcher(object):
         Run the beam profiling application.
         '''
 
-        if RealData==False:
-            simulation = Sim.GaussBeamSimulation()
-            simulation.CreateImages()
+        if self.RealData==False:
+            self.simulation = Sim.GaussBeamSimulation()
+            self.simulation.CreateImages()
 
-        # Start timer for the loop
-        viewtimer = QtCore.QTimer()
+        
 
         # When the 'Connect ROI' button is pressed, 'saveroisize' is called
         self.gui.ui.connect.toggled.connect(self.saveroisize)
@@ -877,22 +1022,26 @@ class App_Launcher(object):
         self.gui.ui.rotcw.clicked.connect(self.updaterotanglecw)
 
         # When the timer is timed out, 'updateview' is called
-        viewtimer.timeout.connect(self.updateview)
-    
-        # Start the timer: time out after 0 ms
-        viewtimer.start(0)
+        self.viewtimer.timeout.connect(self.updateview)
+        
+        if self.camera != None:
+            # Start the timer: time out after 0 ms
+            # self.viewtimer.start(0)
 
-        # When the GUI is closed: stop the timer
-        self.gui.app.exec_()
-        viewtimer.stop()
-        if RealData:
-            self.camera.StopCamera()
+            # When the GUI is closed: stop the timer
+            self.gui.app.exec_()
+            self.viewtimer.stop()
+            if self.RealData:
+                self.camera.StopCamera()
+        else:
+            self.gui.app.exec_()
+
 
 
 
 if __name__=="__main__":
     check = App_Launcher()
-    check.runApp()
+    # check.runApp()
 
 
 

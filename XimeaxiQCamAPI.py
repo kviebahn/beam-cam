@@ -144,28 +144,28 @@ class XimeaxiQCam_API(Camera_API):
 
     def GetDeviceName(self):
 
-    	inf =create_string_buffer(512)
+    	inf2 =create_string_buffer(512)
     	stringsize = c_ulong()
-    	inf = c_char_p('')
+    	inf2 = c_char_p('')
 
     	self.dll.xiGetParamString.argtypes = [c_void_p,c_char_p,c_char_p,POINTER(c_ulong)]
     	print 'defined argtypes'
 
-    	self.GetErrorInfo(self.dll.xiGetParamString(self.handle, c_char_p('device_name'), inf, byref(stringsize)))
+    	self.GetErrorInfo(self.dll.xiGetParamString(self.handle, c_char_p('device_id'), inf2, byref(stringsize)))
 
-    	name = string_at(inf)
+    	name2 = string_at(inf2)
 
     	print "Device ID Length: ", stringsize.value
-    	print "Device ID", name
+    	print "Device ID", name2
 
 
 
 
     def GetExposureTime(self):
 
-    	expotime = c_int(0)
+    	expotime = c_int64(0)
 
-    	self.dll.xiGetParamInt.argtypes = [c_void_p,c_char_p,POINTER(c_int)]
+    	self.dll.xiGetParamInt.argtypes = [c_void_p,c_char_p,POINTER(c_int64)]
 
     	self.GetErrorInfo(self.dll.xiGetParamInt(self.handle, c_char_p('exposure'), byref(expotime)))
 
@@ -174,9 +174,9 @@ class XimeaxiQCam_API(Camera_API):
 
     def SetExposureTime(self,exposuretime=0):
 
-    	expotime = c_int32(exposuretime)
+    	expotime = c_int64(exposuretime)
 
-    	self.dll.xiSetParamInt.argtypes = [c_void_p,c_char_p,c_int32]
+    	self.dll.xiSetParamInt.argtypes = [c_void_p,c_char_p,c_int64]
 
     	self.GetErrorInfo(self.dll.xiSetParamInt(self.handle, c_char_p('exposure'), expotime))
 
@@ -200,7 +200,7 @@ if __name__=="__main__":
     check.GetExposureTime()
     check.SetExposureTime(10)
     check.GetExposureTime()
-    check.GetDeviceName()
+    # check.GetDeviceName()
     check.CloseCamera()
 
     del check.handle
