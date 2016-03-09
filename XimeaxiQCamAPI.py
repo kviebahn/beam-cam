@@ -163,9 +163,9 @@ class XimeaxiQCam_API(Camera_API):
 
     def GetExposureTime(self):
 
-    	expotime = c_int64(0)
+    	expotime = c_int(0)
 
-    	self.dll.xiGetParamInt.argtypes = [c_void_p,c_char_p,POINTER(c_int64)]
+    	self.dll.xiGetParamInt.argtypes = [c_void_p,c_char_p,POINTER(c_int)]
 
     	self.GetErrorInfo(self.dll.xiGetParamInt(self.handle, c_char_p('exposure'), byref(expotime)))
 
@@ -174,9 +174,9 @@ class XimeaxiQCam_API(Camera_API):
 
     def SetExposureTime(self,exposuretime=0):
 
-    	expotime = c_int64(exposuretime)
+    	expotime = c_int(exposuretime)
 
-    	self.dll.xiSetParamInt.argtypes = [c_void_p,c_char_p,c_int64]
+    	self.dll.xiSetParamInt.argtypes = [c_void_p,c_char_p,c_int]
 
     	self.GetErrorInfo(self.dll.xiSetParamInt(self.handle, c_char_p('exposure'), expotime))
 
@@ -198,7 +198,7 @@ if __name__=="__main__":
     # check.CloseCamera()
     check.OpenCamera()
     check.GetExposureTime()
-    check.SetExposureTime(10)
+    check.SetExposureTime(100)
     check.GetExposureTime()
     # check.GetDeviceName()
     check.CloseCamera()

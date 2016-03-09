@@ -96,7 +96,7 @@ class Ui_Window(object):
         self.mainwin = QtGui.QMainWindow()
 
         self.menubar = QtGui.QMenuBar(self.mainwin)
-        self.cameramenu, self.settingsmenu = self.CreateMenuBar()
+        self.cameramenu, self.settingsmenu, self.viewmenu = self.CreateMenuBar()
 
         self.win = QtGui.QWidget()
 
@@ -178,6 +178,7 @@ class Ui_Window(object):
 
         cameraMenu = self.menubar.addMenu('&Camera')
         settingsMenu = self.menubar.addMenu('&Settings')
+        viewMenu = self.menubar.addMenu('&View')
         # refreshAction = QtGui.QAction('Refresh', cameraMenu)
         # cameraMenu.addAction(refreshAction)
         # cameraMenu.addSeparator()
@@ -192,7 +193,7 @@ class Ui_Window(object):
 
         self.mainwin.setMenuBar(self.menubar)
 
-        return cameraMenu, settingsMenu
+        return cameraMenu, settingsMenu, viewMenu
 
 
     def SetRangeViewbox(self):
@@ -430,6 +431,7 @@ class App_Launcher(object):
         self.gui = Ui_Window()
         self.VRmMenu = self.InitializeCamSearch()
         self.InitializeSettings()
+        self.InitializeView()
         
         self.camera = None
         self.imagearray = None
@@ -447,6 +449,8 @@ class App_Launcher(object):
 
         self.saturationvalue = None
         self.saturationthreshold = 5
+
+        self.muperpxl = None
 
         self.SearchCameras()
 
@@ -515,6 +519,41 @@ class App_Launcher(object):
         saturationMenu.addAction(thresholdAction)
 
         self.gui.mainwin.connect(thresholdAction,QtCore.SIGNAL('triggered()'), lambda: self.AdjustSaturationThreshold())
+
+
+    def InitializeView(self):
+
+        scalingAction = QtGui.QAction('Scaling',self.gui.viewmenu)
+        self.gui.viewmenu.addAction(scalingAction)
+
+        self.gui.mainwin.connect(scalingAction,QtCore.SIGNAL('triggered()'), lambda: self.AdjustScaling())
+
+
+    def AdjustScaling(self):
+
+        oldmuperpxl = self.muperpxl
+        number,ok = QtGui.QInputDialog.getDouble(self.gui.win,"Adjust Scaling","Enter the value for scaling in micrometer per pixel:",decimals=3)
+        
+        if ok:
+            self.muperpxl = number
+            self.gui.p2.setLabel('bottom',"Horizontal Position",units='mu m')
+            self.gui.p3.setLabel('left',"Vertical Position",units='mu m')
+            if oldmuperpxl == None:
+                self.databuffer[3:,] = self.RescaleParameter(self.databuffer[3:,])
+            # print self.muperpxl
+
+
+    def RescaleParameter(self,parameter):
+        '''
+        Rescales a parameter (in pixel) using the muperpxl variable.
+        Returns parameter in micrometer.
+        '''
+
+        retvalue = parameter*self.muperpxl
+        return retvalue
+
+
+
 
     def AdjustSaturationThreshold(self):
 
@@ -748,7 +787,11 @@ class App_Launcher(object):
             self.CheckSaturation()
 
             if self.gui.ui.connect.isChecked():
-                sel.upddateroipos(self.databuffer[3,-1],self.databuffer[4,-1])
+                if muperpxl == None:
+                    self.upddateroipos(self.databuffer[3,-1],self.databuffer[4,-1])
+                else:
+                    self.upddateroipos(self.databuffer[3,-1]/self.muperpxl,self.databuffer[4,-1]/self.muperpxl)
+
             
             self.updateRoi()
 
@@ -789,7 +832,15 @@ class App_Launcher(object):
         '''
 
         # Get ROI data
-        selected = self.gui.roi.getArrayRegion(self.imagearray.T, self.gui.img)
+        selected,coorddata = self.gui.roi.getArrayRegion(self.imagearray.T, self.gui.img,returnMappedCoords=True)
+        xhor = coorddata[0][:,0]
+        if self.muperpxl != None:
+            xhor = self.RescaleParameter(xhor)
+        xvert = coorddata[1][0,:]
+        if self.muperpxl != None:
+            xvert = self.RescaleParameter(xvert)
+        # print 'horizontal data', xhor
+
 
         # Calculate amplitude
         amplitude = selected.sum()
@@ -803,12 +854,12 @@ class App_Launcher(object):
 
         # Plot sum in horizontal direction and fit gaussian
         datahor = selected.sum(axis=1)
-        self.gui.p2.plot(datahor, clear=True)
-        FittedParamsHor = MatTools.FitGaussian(datahor)[0]
-        xhor = np.arange(datahor.size)
+        self.gui.p2.plot(xhor,datahor, clear=True)
+        FittedParamsHor = MatTools.FitGaussian(datahor,xhor)[0]
+        # xhor = np.arange(datahor.size)
 
         if self.gui.ui.fitCheck.isChecked():
-            self.gui.p2.plot(MatTools.gaussian(xhor,*FittedParamsHor), pen=(0,255,0))
+            self.gui.p2.plot(xhor,MatTools.gaussian(xhor,*FittedParamsHor), pen=(0,255,0))
 
         # Plot amplitude
         xamp = np.array([1.,2.])
@@ -817,16 +868,22 @@ class App_Launcher(object):
 
         # Plot sum in vertical direction and fit gaussian, save fit results in buffer and show in text box
         datavert = selected.sum(axis=0)
-        self.gui.p3.plot(datavert, clear=True).rotate(90)
-        FittedParamsVert = MatTools.FitGaussian(datavert)[0]
-        xvert = np.arange(datavert.size)
+        self.gui.p3.plot(xvert,datavert, clear=True).rotate(90)
+        FittedParamsVert = MatTools.FitGaussian(datavert,xvert)[0]
+        # xvert = np.arange(datavert.size)
 
         if self.gui.ui.fitCheck.isChecked():
-            self.gui.p3.plot(MatTools.gaussian(xvert,*FittedParamsVert), pen=(0,255,0)).rotate(90)
-            poshor = FittedParamsHor[2]+self.gui.roi.pos()[0]
-            posvert = FittedParamsVert[2]+self.gui.roi.pos()[1]
+            self.gui.p3.plot(xvert,MatTools.gaussian(xvert,*FittedParamsVert), pen=(0,255,0)).rotate(90)
+            poshor = FittedParamsHor[2]
+            posvert = FittedParamsVert[2]
             waistx = FittedParamsHor[1]
             waisty = FittedParamsVert[1]
+
+            # if self.muperpxl != None:
+            #     poshor = self.RescaleParameter(poshor)
+            #     posvert = self.RescaleParameter(posvert)
+            #     waistx = self.RescaleParameter(waistx)
+            #     waisty = self.RescaleParameter(waisty)
 
             self.databuffer[3,-1] = poshor
             self.databuffer[4,-1] = posvert
@@ -840,29 +897,48 @@ class App_Launcher(object):
 
             
             # Adjust cross hair
-            self.gui.hLine.setPos(FittedParamsVert[2]+self.gui.roi.pos()[1])
-            self.gui.vLine.setPos(FittedParamsHor[2]+self.gui.roi.pos()[0])
+            if self.muperpxl == None:
+                self.gui.hLine.setPos(FittedParamsVert[2])
+                self.gui.vLine.setPos(FittedParamsHor[2])
+            else:
+                self.gui.hLine.setPos(FittedParamsVert[2]/self.muperpxl)
+                self.gui.vLine.setPos(FittedParamsHor[2]/self.muperpxl)
+
 
             self.gui.vLine.show()
             self.gui.hLine.show()
 
             # Plot peak
-            pos = np.array([[(FittedParamsHor[2]+self.gui.roi.pos()[0]),(FittedParamsVert[2]+self.gui.roi.pos()[1])]])           
+            if self.muperpxl == None:
+                pos = np.array([[(FittedParamsHor[2]),(FittedParamsVert[2])]])  
+            else:
+                pos = np.array([[(FittedParamsHor[2]/self.muperpxl),(FittedParamsVert[2]/self.muperpxl)]])        
             self.gui.peak.setData(pos,clear=True)
 
             # Plot contour
-            x = np.linspace(-(FittedParamsHor[1]),(FittedParamsHor[1]),1000)
-            sigmax = FittedParamsHor[1]
-            sigmay = FittedParamsVert[1]
-            y = ellipse(x,sigmax,sigmay)
+            if self.muperpxl == None:
+                x = np.linspace(-(FittedParamsHor[1]),(FittedParamsHor[1]),1000)
+                sigmax = FittedParamsHor[1]
+                sigmay = FittedParamsVert[1]
+                y = ellipse(x,sigmax,sigmay)
 
-            x = np.append(x,-x)
-            y = np.append(y,-y)
-            
-            x += FittedParamsHor[2]+self.gui.roi.pos()[0]
-            y += FittedParamsVert[2]+self.gui.roi.pos()[1]
-            # X,Y = np.meshgrid(x,y)
-            # contour.clear()
+                x = np.append(x,-x)
+                y = np.append(y,-y)
+                
+                x += FittedParamsHor[2]
+                y += FittedParamsVert[2]
+            else:
+                x = np.linspace(-(FittedParamsHor[1]/self.muperpxl),(FittedParamsHor[1]/self.muperpxl),1000)
+                sigmax = FittedParamsHor[1]/self.muperpxl
+                sigmay = FittedParamsVert[1]/self.muperpxl
+                y = ellipse(x,sigmax,sigmay)
+
+                x = np.append(x,-x)
+                y = np.append(y,-y)
+                
+                x += FittedParamsHor[2]/self.muperpxl
+                y += FittedParamsVert[2]/self.muperpxl
+
             self.gui.contour.setData(x,y,clear=True)
 
         else:
@@ -934,25 +1010,40 @@ class App_Launcher(object):
 
             if self.gui.ui.poshorRadio.isChecked():
                 self.gui.timeplot.plot(timescale,self.databuffer[3,:],clear=True)
-                self.gui.timeplot.setLabel('left', "Horizontal Position", units='px')
+                if self.muperpxl == None:
+                    self.gui.timeplot.setLabel('left', "Horizontal Position", units='px')
+                else:
+                    self.gui.timeplot.setLabel('left', "Horizontal Position", units='mu m')
+
 
             if self.gui.ui.posvertRadio.isChecked():
                 self.gui.timeplot.plot(timescale,self.databuffer[4,:],clear=True)
-                self.gui.timeplot.setLabel('left', "Vertical Position", units='px')
+                if self.muperpxl == None:
+                    self.gui.timeplot.setLabel('left', "Vertical Position", units='px')
+                else:
+                    self.gui.timeplot.setLabel('left', "Vertical Position", units='mu m')
 
             if self.gui.ui.waisthorRadio.isChecked():
                 self.gui.timeplot.plot(timescale,self.databuffer[5,:],clear=True)
-                self.gui.timeplot.setLabel('left', "Horizontal Waist", units='px')
+                if self.muperpxl == None:
+                    self.gui.timeplot.setLabel('left', "Horizontal Waist", units='px')
+                else:
+                    self.gui.timeplot.setLabel('left', "Horizontal Waist", units='mu m')
 
             if self.gui.ui.waistvertRadio.isChecked():
                 self.gui.timeplot.plot(timescale,self.databuffer[6,:],clear=True)
-                self.gui.timeplot.setLabel('left', "Vertical Waist", units='px')
-
+                if self.muperpxl == None:
+                    self.gui.timeplot.setLabel('left', "Vertical Waist", units='px')
+                else:
+                    self.gui.timeplot.setLabel('left', "Vertical Waist", units='mu m')
             if self.gui.ui.distRadio.isChecked():
                 distance = np.sqrt((self.databuffer[3,:]-self.gui.ui.x0Spin.value())**2+\
                     (self.databuffer[4,:]-self.gui.ui.y0Spin.value())**2)
                 self.gui.timeplot.plot(timescale,distance,clear=True)
-                self.gui.timeplot.setLabel('left', "Distance to reference peak", units='px')
+                if self.muperpxl == None:
+                    self.gui.timeplot.setLabel('left', "Distance to reference peak", units='px')
+                else:
+                    self.gui.timeplot.setLabel('left', "Distance to reference peak", units='mu m')
 
         else:
             self.gui.ui.ampRadio.setChecked(True)

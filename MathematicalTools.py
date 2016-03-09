@@ -54,13 +54,14 @@ def gaussian2(xy, *p):
 
 
 
-def FitGaussian(data):
+def FitGaussian(data,xdata=None):
     '''fits gaussian to data'''
 
     def split(arr, size):
         '''
         EXPERIMENTAL!
         reduce size of fit array by taking mean over a certain number of cells
+        Not working with any xdata (still to implement)!!
         '''
         length = arr.size
         cutoff = length % size
@@ -70,19 +71,23 @@ def FitGaussian(data):
         return arrs, cutoff
 
     # x = np.arange(data.size)
-    usepervimpro = True # Should the 'split' method be used to improve performance?
+    usepervimpro = False # Should the 'split' method be used to improve performance?
     meansize = 5 # if usepervimpro = True: how many values are taken together to calculate the mean.
     critvalue = 200 # value from which on the 'split' method is used.
-
-    if usepervimpro:
-        if data.size > critvalue:
-            data, cutoff = split(data,meansize)
-            corr = (meansize-1)/2.
-            x = np.arange(data.size)*meansize + corr + cutoff
+    if xdata != None:
+        x = xdata
+    else:
+        if usepervimpro:
+            if data.size > critvalue:
+                data, cutoff = split(data,meansize)
+                corr = (meansize-1)/2.
+                x = np.arange(data.size)*meansize + corr + cutoff
+            else:
+                x = np.arange(data.size)
         else:
             x = np.arange(data.size)
-    else:
-        x = np.arange(data.size)
+    
+        
 
     # print data
 
