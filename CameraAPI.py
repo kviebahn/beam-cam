@@ -117,7 +117,7 @@ class Camera_API(object):
 
     def SetExposureTime(self):
         '''
-        This method sets the exposure time to the input value, returns the value and sets the global variable.
+        This method sets the exposure time to the input value (float), returns the value and sets the global variable.
         '''
 
         print "This method is not implemented here!"
@@ -157,7 +157,7 @@ class Camera_API(object):
 
     def SetGainValue(self):
         '''
-        This method sets the gain to the input value, returns the value and sets the global variable.
+        This method sets the gain to the input value (float), returns the value and sets the global variable.
         '''
 
         print "This method is not implemented here!"

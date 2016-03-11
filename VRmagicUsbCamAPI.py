@@ -675,6 +675,7 @@ class VRmagicUSBCam_API(Camera_API):
         This method sets the gain to the input value, returns the value and sets the global variable.
         '''
 
+        gainvalue =int(round(gainvalue,0))
         GainValue = c_int(gainvalue)
         Error = self.dll.VRmUsbCamSetPropertyValueI(self.CamIndex, GainValueAddress, byref(GainValue))
         if Error==0:

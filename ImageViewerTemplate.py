@@ -156,7 +156,7 @@ class Ui_Form(object):
         self.exposureSpin = QtGui.QDoubleSpinBox(Form)
         self.exposureSpin.setRange(0.,100.)
         self.exposureSpin.setProperty("value", 1.)
-        self.exposureSpin.setDecimals(4)
+        self.exposureSpin.setDecimals(3)
         self.exposureSpin.setSingleStep(0.1)
         self.exposureSpin.setObjectName(_fromUtf8("exposureSpin"))
         self.gridLayout.addWidget(self.exposureSpin, 6, 2, 1, 1)
@@ -167,9 +167,11 @@ class Ui_Form(object):
         self.gridLayout.addWidget(self.exposurelabel, 6, 3, 1, 1)
 
         '''Defines the spin box for the gain value'''
-        self.gainSpin = QtGui.QSpinBox(Form)
-        self.gainSpin.setRange(16,64)
-        self.gainSpin.setProperty("value", 16)
+        self.gainSpin = QtGui.QDoubleSpinBox(Form)
+        self.gainSpin.setRange(16.,64.)
+        self.gainSpin.setProperty("value", 16.)
+        self.gainSpin.setDecimals(3)
+        self.gainSpin.setSingleStep(0.1)
         self.gainSpin.setObjectName(_fromUtf8("gainSpin"))
         self.gridLayout.addWidget(self.gainSpin, 7, 2, 1, 1)
 

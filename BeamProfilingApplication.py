@@ -465,8 +465,32 @@ class App_Launcher(object):
         
         ExpoTime = self.camera.GetExposureTime()
         self.gui.ui.exposureSpin.setProperty("value", ExpoTime)
+        ExpoTimeRange = self.camera.GetExposureTimeRange()
+        self.gui.ui.exposureSpin.setRange(ExpoTimeRange[0],ExpoTimeRange[1])
+        # This applies only to steps shown in GUI (for better handling);
+        # internal stepsize of device is different.
+        # Can be modified by changing the division factor.
+        ExpoSteps = (ExpoTimeRange[1] - ExpoTimeRange[0])/50
+        ExpoStepsReal = self.camera.GetExposureTimeSteps()
+        if ExpoStepsReal >= ExpoSteps:
+            ExpoSteps = ExpoStepsReal
+        self.gui.ui.exposureSpin.setSingleStep(ExpoSteps) 
+
         GainValue = self.camera.GetGainValue()
         self.gui.ui.gainSpin.setProperty("value", GainValue)
+        GainRange = self.camera.GetGainRange()
+        self.gui.ui.gainSpin.setRange(GainRange[0],GainRange[1])
+        # This applies only to steps shown in GUI (for better handling);
+        # internal stepsize of device is different.
+        # Can be modified by changing the division factor.
+        GainSteps = (GainRange[1] - GainRange[0])/50
+        GainStepsReal = self.camera.GetGainSteps()
+        if GainStepsReal >= GainSteps:
+            GainSteps = GainStepsReal
+        self.gui.ui.gainSpin.setSingleStep(GainSteps) 
+
+
+
 
         self.saturationvalue = self.camera.GetSaturationValue()
         # Switch off status LED
