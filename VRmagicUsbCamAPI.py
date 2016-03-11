@@ -744,7 +744,7 @@ if __name__=="__main__":
 
     check.GetNextImage()
     # check.GetExposureTime()
-    # check.SetExposureTime(230.)
+    check.SetExposureTime(30.)
     # check.GetGainValue()
     # check.SetGainValue(34)
     # check.GetExposureTimeRange()
