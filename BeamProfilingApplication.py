@@ -227,9 +227,13 @@ class Ui_Window(object):
         Creates and initializes ROI.
         The roi is returned.
         '''
-        roi = pg.ROI([160, 40], [400, 400],pen='b') # First lower left edge in pxl [x,y], then Size in pxl 
+        roi = pg.ROI([160, 40], [400, 400],pen='b',movable=False) # First lower left edge in pxl [x,y], then Size in pxl 
         roi.addScaleHandle([0.5, 1], [0.5, 0.5])
         roi.addScaleHandle([0, 0.5], [0.5, 0.5])
+        roi.addTranslateHandle([0,1])
+        roi.addTranslateHandle([1,1])
+        roi.addTranslateHandle([0,0])
+        roi.addTranslateHandle([1,1])
         roi.setZValue(10)  # Make sure ROI is drawn above
         bounds = QtCore.QRectF(0,0,753,479) # Set bounds of the roi
         roi.maxBounds = bounds
@@ -447,6 +451,9 @@ class App_Launcher(object):
         #???
         # self.VRmCam = None
 
+        # The image size as tuple (width,height)
+        self.imagesize = (754,754)
+
         self.saturationvalue = None
         self.saturationthreshold = 5
 
@@ -490,11 +497,22 @@ class App_Launcher(object):
         self.gui.ui.gainSpin.setSingleStep(GainSteps) 
 
 
-
+        self.imagesize = self.camera.GetImageSize()
+        self.InitializeViewBoxSize()
 
         self.saturationvalue = self.camera.GetSaturationValue()
         # Switch off status LED
         # camera.SetStatusLED(camera.CamIndex,False)
+
+    def InitializeViewBoxSize(self):
+        '''
+        Adapts the viewbox size to the actual image.
+        '''
+
+        self.gui.view.setRange(QtCore.QRectF(0, 0, self.imagesize[0], self.imagesize[1]))
+        bounds = QtCore.QRectF(0,0,self.imagesize[0]-1,self.imagesize[1]-1)
+        self.gui.roi.maxBounds = bounds
+
 
     def CreateFile(self,name='test'):
         '''
@@ -762,6 +780,16 @@ class App_Launcher(object):
                 except: # Show last image if grab failed -> Does not work (?)
                     self.imagearray = np.rot90(imagearray,-1*self.rotangle)
 
+
+
+            '''
+            ---------------------------------------------------------
+            ---------------------------------------------------------
+            ADAPT TO VARIABLE SIZING OF IMAGE VIEWBOX!! 
+            ---------------------------------------------------------
+            ---------------------------------------------------------
+            '''
+
             self.imagearray = np.rot90(self.imagearray,self.rotangle)
             
             if self.rotangle==0 or self.rotangle==2:
@@ -796,7 +824,7 @@ class App_Launcher(object):
                     self.gui.roi.setSize([200,200],finish=False)
                 if roipos[0] >= (480-roisize[0]):
                     self.gui.roi.setPos([200,200],finish=False)
-                    self.guiroi.setSize([200,200],finish=False)
+                    self.gui.roi.setSize([200,200],finish=False)
 
 
             '''
@@ -834,6 +862,10 @@ class App_Launcher(object):
         self.rotangle = self.rotangle + 3
         self.rotangle = self.rotangle % 4
 
+        oldimagesize = self.imagesize
+        self.imagesize = (oldimagesize[1],oldimagesize[0])
+        self.InitializeViewBoxSize()
+
 
     def updaterotanglecw(self):
         '''
@@ -843,6 +875,10 @@ class App_Launcher(object):
 
         self.rotangle = self.rotangle + 1
         self.rotangle = self.rotangle % 4
+
+        oldimagesize = self.imagesize
+        self.imagesize = (oldimagesize[1],oldimagesize[0])
+        self.InitializeViewBoxSize()
 
 
     def updateRoi(self):

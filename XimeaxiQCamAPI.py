@@ -363,7 +363,8 @@ class XimeaxiQCam_API(Camera_API):
         This array can then be used by external programs to display the image or a live view.
         ------------------------------------------------------------------------------------------
         ------------------------------------------------------------------------------------------
-        WARNING: Only working with MONO-8 and RAW-8 format; no colors supported yet!!
+        WARNING: Only working with MONO-8/RAW-8 format; MONO-16/RAW-16 support implemented, but not tested;
+        no colors supported yet (RGB24/32 formats)!
         '''
 
         timeout = c_ulong(5000)
@@ -371,15 +372,23 @@ class XimeaxiQCam_API(Camera_API):
         self.GetErrorInfo(self.dll.xiGetImage(self.handle,timeout,byref(self.imagecontainer)))
 
         print 'Get Image'
-        # print ImageFormat[self.imagecontainer.frm] ,"Color Format"
+        print ImageFormat[self.imagecontainer.frm] ,"Color Format"
         # print self.imagecontainer.width, "image width"
         # print self.imagecontainer.height, "image height"
         # print 'image', self.imagecontainer.bp
+        if ImageFormat[self.imagecontainer.frm] == 'XI_MONO8' or ImageFormat[self.imagecontainer.frm] == 'XI_RAW8':
+            arraytype = c_ubyte*self.imagecontainer.bp_size
+            imagepointer = cast(self.imagecontainer.bp,POINTER(arraytype))
+            # print 'imagepointer', imagepointer
+            imagearray = np.frombuffer(imagepointer.contents,dtype=np.uint8)
+        elif ImageFormat[self.imagecontainer.frm] == 'XI_MONO16' or ImageFormat[self.imagecontainer.frm] == 'XI_RAW16':
+            # NOT TESTED!!
+            arraytype = c_ushort*self.imagecontainer.bp_size
+            imagepointer = cast(self.imagecontainer.bp,POINTER(arraytype))
+            imagearray = np.frombuffer(imagepointer.contents,dtype=np.uint16)
+        else:
+            print "THIS FORMAT IS NO SUPPORTED!"
 
-        arraytype = c_ubyte*self.imagecontainer.bp_size
-        imagepointer = cast(self.imagecontainer.bp,POINTER(arraytype))
-        # print 'imagepointer', imagepointer
-        imagearray = np.frombuffer(imagepointer.contents,dtype=np.uint8)
         # print 'imagedatalist', imagearray
         # print 'imagesize', len(imagearray)
         imagearray = imagearray.reshape((int(self.imagecontainer.height),int(self.imagecontainer.width)))
