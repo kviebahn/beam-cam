@@ -155,6 +155,8 @@ class VRmagicUSBCam_API(Camera_API):
 
         self.cameraList = None
 
+        self.CamIndex = None
+
         self.imageSize = None
         self.saturationValue = None
         self.exposureTime = None
@@ -166,8 +168,7 @@ class VRmagicUSBCam_API(Camera_API):
 
         # Own variables
         self.key = None
-        self.keytest = 0
-        self.CamIndex = None
+        self.keytest = 0   
         self.format = ImageFormat()
 
 
@@ -588,7 +589,7 @@ class VRmagicUSBCam_API(Camera_API):
 
     def GetExposureTime(self):
         '''
-        This method returns the actual value of the exposure time and sets the global variable.
+        This method returns the actual value of the exposure time and sets the global variable (in ms).
         '''
 
         ExpoTime = c_float(0.0)
@@ -604,7 +605,7 @@ class VRmagicUSBCam_API(Camera_API):
 
     def SetExposureTime(self,exposuretime=0):
         '''
-        This method sets the exposure time to the input value, returns the value and sets the global variable.
+        This method sets the exposure time to the input value, returns the value and sets the global variable (in ms).
         '''
 
         ExpoTime = c_float(exposuretime)
@@ -621,7 +622,7 @@ class VRmagicUSBCam_API(Camera_API):
 
     def GetExposureTimeRange(self):
         '''
-        Returns the adjustable range of the exposure time and sets the global variable.
+        Returns the adjustable range of the exposure time and sets the global variable. (in ms)
         '''
 
         expotimeprops = ExpoTimeProps()
@@ -638,7 +639,7 @@ class VRmagicUSBCam_API(Camera_API):
 
     def GetExposureTimeSteps(self):
         '''
-        Returns the stepsize of the exposure time and sets the global variable.
+        Returns the stepsize of the exposure time and sets the global variable. (in ms)
         '''
 
         expotimeprops = ExpoTimeProps()

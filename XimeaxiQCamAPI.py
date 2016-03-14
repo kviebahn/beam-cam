@@ -7,7 +7,8 @@ Created on Tue Mar 01 11:20:45 2016
 This Script provides a Python interface to VR Magic USB Cameras. It only contains the most relevant methods.
 If necessary, other methods can be implemented by using the the header file "vrmusbcam2.h".
 
-This Script defines a subclass to "CameraAPI.py" working with Ximea xiQ cameras.
+This Script defines a subclass to "CameraAPI.py" working with Ximea xiQ cameras. Only the necessary methods
+are implemented. A range of further methods can be implemented in a similar manner as here.
 
 This file is part of beam-cam, a camera project to monitor and characterise laser beams.
 Copyright (C) 2015 Christian Gross <christian.gross@mpq.mpg.de>, Timon Hilker <timon.hilker@mpq.mpg.de>, Michael Hoese <michael.hoese@physik.lmu.de> and Konrad Viebahn <kv291@cam.ac.uk> 
@@ -167,6 +168,8 @@ class XimeaxiQCam_API(Camera_API):
 
         self.cameraList = None
 
+        self.CamIndex = None
+
         self.imageSize = None
         self.saturationValue = None
         self.exposureTime = None
@@ -177,15 +180,14 @@ class XimeaxiQCam_API(Camera_API):
         self.gainSteps = None
 
         #Own variables
-        self.numberCams = None
-        self.camIndex = 0
+        self.numberCams = None  
         self.handle = c_void_p()
         self.imagecontainer = Image()
 
 
     def GetErrorInfo(self,errornum=0):
 
-    	if errornum >= 0:
+    	if errornum > 0:
     		print error_codes[errornum]
     	else:
     		pass
@@ -206,38 +208,39 @@ class XimeaxiQCam_API(Camera_API):
 
 
     def GetDeviceInfo(self):
+        '''
+        Returns the device name.
+        '''
 
 
-
-    	camid =c_ulong(self.camIndex)
+    	camid =c_ulong(self.CamIndex)
     	stringsize = c_ulong(0)
-    	inf =create_string_buffer(512)
+    	# inf =create_string_buffer(512)
     	inf = c_char_p('')
     	# stringbuffer = create_string_buffer('device_name')
     	parameter = c_wchar_p(XI_PRM_DEVICE_NAME)
     	self.dll.xiGetDeviceInfoString.argtypes = [c_ulong,c_char_p,c_char_p,POINTER(c_ulong)]
-    	print 'defined argtypes'
+    	# print 'defined argtypes'
 
     	self.GetErrorInfo(self.dll.xiGetDeviceInfoString(camid, c_char_p('device_name'), inf, byref(stringsize)))
     	print 'read out info string'
 
     	# print "Success", stringsize
     	
-
     	name = string_at(inf)
     	del inf
     	
-
     	# name =''.join(name)
-
-    	print "Device Name Length: ", stringsize.value
+    	# print "Device Name Length: ", stringsize.value
     	print "Device Name", name
+
+        return name
     	
 
 
     def OpenCamera(self):
 
-    	camid =c_ulong(self.camIndex)
+    	camid =c_ulong(self.CamIndex)
     	
     	self.GetErrorInfo(self.dll.xiOpenDevice(camid,byref(self.handle)))
 
@@ -258,7 +261,7 @@ class XimeaxiQCam_API(Camera_API):
         self.imagecontainer.bp_size = 0
 
         self.GetErrorInfo(self.dll.xiSetParamInt(self.handle,c_char_p('buffer_policy'),XI_BP_SAFE))
-        print "Set buffer policy"
+        # print "Set buffer policy"
 
         self.GetErrorInfo(self.dll.xiStartAcquisition(self.handle))
 
@@ -271,38 +274,7 @@ class XimeaxiQCam_API(Camera_API):
 
         print "Stop Acquisition"
 
-    def GetNextImage(self):
-
-        timeout = c_ulong(5000)
-        # imagecontainer = ImageShort()
-
-        self.dll.xiGetImage.argtypes = [c_void_p,c_ulong,POINTER(Image)]
-        self.GetErrorInfo(self.dll.xiGetImage(self.handle,timeout,byref(self.imagecontainer)))
-
-        # if self.imagecontainer.frm == 0 or self.imagecontainer.frm == 5:
-        #     img_array = np.asarray(int(self.imagecontainer.bp[:self.imagecontainer.bp_size])).reshape((self.imagecontainer.height,self.imagecontainer.width))
-        #     self.imageArray = img_array
-
-        print 'Get Image'
-        print ImageFormat[self.imagecontainer.frm] ,"Color Format"
-        print self.imagecontainer.width, "image width"
-        print self.imagecontainer.height, "image height"
-        print 'image', self.imagecontainer.bp
-
-        arraytype = c_ubyte*self.imagecontainer.bp_size
-
-        # imagepointer = np.zeros(self.imagecontainer.bp_size)
-        imagepointer = cast(self.imagecontainer.bp,POINTER(arraytype))
-        print 'imagepointer', imagepointer
-        imagearray = np.frombuffer(imagepointer.contents,dtype=np.uint8)
-        # imagearray = np.asarray(imagepointer.contents,dtype=np.uint8)
-        # print 'imagedatalist', imagearray
-        print 'imagesize', len(imagearray)
-        imagearray = imagearray.reshape((int(self.imagecontainer.height),int(self.imagecontainer.width)))
-        print 'Imageshape', imagearray.shape
-        print 'Image Data Type', imagearray.dtype
-        self.imageArray = imagearray.astype(float)
-        print 'Imagelist', self.imageArray[588,458]
+    
 
 
     def GetDeviceName(self):
@@ -323,27 +295,274 @@ class XimeaxiQCam_API(Camera_API):
 
 
 
+    '''
+    ------------------------------------------------------------------------------------------------
+    Methods that overwrite the suberclass methods.
+    ------------------------------------------------------------------------------------------------
+    '''
+
+    def StartCamera(self,camindex=0):
+        '''
+        This method starts the camera.
+        '''
+
+        self.CamIndex = camindex
+
+        self.OpenCamera()
+        self.StartAcquisition()
+
+        print 'Cam started'
+
+
+        
+    def StopCamera(self):
+        '''
+        This method stops the camera, that is in use at the moment.
+        '''
+
+        self.StopAcquisition()
+        self.CloseCamera()
+
+        self.handle = c_void_p()
+
+        print 'Cam stopped'
+
+
+
+    def CreateCameraList(self):
+
+        '''
+        This method creates a camera list. All available cameras of one type are listed in an array of
+        strings (their serial number).
+        '''
+
+        self.GetErrorInfo(self.GetNumberCams())
+        cameralist = []
+        if self.numberCams != 0:
+            for i in range(self.numberCams):
+                self.CamIndex = i
+                serial = self.GetDeviceInfo()
+                
+                addlist = [serial]
+                cameralist = cameralist + addlist
+                print cameralist, "cameralist"    
+                i += 1
+            
+        else:
+            print 'ERROR -- No cameras found!!'
+
+        self.cameraList = cameralist
+        return cameralist
+
+
+    def GetNextImage(self):
+        '''
+        This method gets the next image and stores it in self.imageArray.
+        
+        The next image is grabbed and stored as a 'numpy array'.
+        This array can then be used by external programs to display the image or a live view.
+        ------------------------------------------------------------------------------------------
+        ------------------------------------------------------------------------------------------
+        WARNING: Only working with MONO-8 and RAW-8 format; no colors supported yet!!
+        '''
+
+        timeout = c_ulong(5000)
+        self.dll.xiGetImage.argtypes = [c_void_p,c_ulong,POINTER(Image)]
+        self.GetErrorInfo(self.dll.xiGetImage(self.handle,timeout,byref(self.imagecontainer)))
+
+        print 'Get Image'
+        # print ImageFormat[self.imagecontainer.frm] ,"Color Format"
+        # print self.imagecontainer.width, "image width"
+        # print self.imagecontainer.height, "image height"
+        # print 'image', self.imagecontainer.bp
+
+        arraytype = c_ubyte*self.imagecontainer.bp_size
+        imagepointer = cast(self.imagecontainer.bp,POINTER(arraytype))
+        # print 'imagepointer', imagepointer
+        imagearray = np.frombuffer(imagepointer.contents,dtype=np.uint8)
+        # print 'imagedatalist', imagearray
+        # print 'imagesize', len(imagearray)
+        imagearray = imagearray.reshape((int(self.imagecontainer.height),int(self.imagecontainer.width)))
+        print 'Imageshape', imagearray.shape
+        print 'Image Data Type', imagearray.dtype
+        self.imageArray = imagearray.astype(float)
+        # print 'Imagelist', self.imageArray[588,458]
+
+
+
+
+    def GetImageSize(self):
+        '''
+        This method reads out the actual image size and stores it in self.imageSize and returns the values
+        as tuple (width,height).
+        '''
+
+        width = c_int(0)
+        height = c_int(0)
+
+        self.dll.xiGetParamInt.argtypes = [c_void_p,c_char_p,POINTER(c_int)]
+
+        self.GetErrorInfo(self.dll.xiGetParamInt(self.handle, c_char_p('width'), byref(width)))
+        self.GetErrorInfo(self.dll.xiGetParamInt(self.handle, c_char_p('height'), byref(height)))
+
+        imagesize = (int(width.value),int(height.value))
+
+        # print imagesize, "Image Size"
+
+        self.imageSize = imagesize
+
+        return imagesize
+
+    def GetSaturationValue(self):
+        '''
+        This method reads out the actual saturation value of the camera and stores it in self.saturationValue and returns the value.
+        '''
+        bitsperpxl = c_int(0)
+
+        self.dll.xiGetParamInt.argtypes = [c_void_p,c_char_p,POINTER(c_int)]
+
+        self.GetErrorInfo(self.dll.xiGetParamInt(self.handle, c_char_p('output_bit_depth'), byref(bitsperpxl)))
+
+        # print bitsperpxl.value, "Bits per Pixel"
+
+        satvalue = 2**bitsperpxl.value - 1
+        self.saturationValue = satvalue
+        # print satvalue, "Saturation Value"
+
+        return satvalue
+
+       
 
     def GetExposureTime(self):
+        '''
+        This method returns the actual value of the exposure time and sets the global variable (in ms).
+        '''
 
     	expotime = c_int(0)
 
     	self.dll.xiGetParamInt.argtypes = [c_void_p,c_char_p,POINTER(c_int)]
-
     	self.GetErrorInfo(self.dll.xiGetParamInt(self.handle, c_char_p('exposure'), byref(expotime)))
 
-    	print expotime.value, "Exposure time"
+        self.exposureTime = expotime.value/1000.
+        print self.exposureTime, "Exposure time in ms"
+        return self.exposureTime
 
 
     def SetExposureTime(self,exposuretime=0):
 
-    	expotime = c_int(exposuretime)
+    	expotime = c_int(int(round(exposuretime*1000.)))
 
     	self.dll.xiSetParamInt.argtypes = [c_void_p,c_char_p,c_int]
-
     	self.GetErrorInfo(self.dll.xiSetParamInt(self.handle, c_char_p('exposure'), expotime))
 
-    	print "Set Exposure Time to ..."
+        self.exposureTime = expotime.value/1000.
+
+    	print "Set Exposure Time to :", self.exposureTime
+
+
+    def GetExposureTimeRange(self):
+        '''
+        Returns the adjustable range of the exposure time and sets the global variable. (in ms)
+        '''
+        expomin = c_int(0)
+        expomax = c_int(0)
+
+        self.dll.xiGetParamInt.argtypes = [c_void_p,c_char_p,POINTER(c_int)]
+        self.GetErrorInfo(self.dll.xiGetParamInt(self.handle, c_char_p('exposure:min'), byref(expomin)))
+        self.GetErrorInfo(self.dll.xiGetParamInt(self.handle, c_char_p('exposure:max'), byref(expomax)))
+
+        self.exposureRange = (expomin.value/1000.,expomax.value/1000.)
+
+        print "Exposure Range: ", self.exposureRange
+
+        return self.exposureRange
+
+        # print expomin.value, "Minimal Exposure Time"
+
+
+
+    def GetExposureTimeSteps(self):
+        '''
+        Returns the stepsize of the exposure time and sets the global variable. (in ms)
+        '''
+        exposteps = c_int(0)
+
+        self.dll.xiGetParamInt.argtypes = [c_void_p,c_char_p,POINTER(c_int)]
+        self.GetErrorInfo(self.dll.xiGetParamInt(self.handle, c_char_p('exposure:inc'), byref(exposteps)))
+
+        self.exposureSteps = exposteps.value/1000.
+        print "Expo Steps: ", self.exposureSteps
+        return self.exposureSteps
+
+
+
+    def GetGainValue(self):
+        '''
+        This method returns the actual value of the gain and sets the global variable.
+        '''
+
+        gainvalue = c_float(0.0)
+
+        self.dll.xiGetParamFloat.argtypes = [c_void_p,c_char_p,POINTER(c_float)]
+        self.GetErrorInfo(self.dll.xiGetParamFloat(self.handle, c_char_p('gain'), byref(gainvalue)))
+
+        print gainvalue.value, "Gain"
+
+        self.gainValue = gainvalue.value
+        return self.gainValue
+
+
+
+
+    def SetGainValue(self,gainvalue=0):
+        '''
+        This method sets the gain to the input value, returns the value and sets the global variable.
+        '''
+        gainvalue = c_float(gainvalue)
+
+        self.dll.xiSetParamFloat.argtypes = [c_void_p,c_char_p,c_float]
+        self.GetErrorInfo(self.dll.xiSetParamFloat(self.handle, c_char_p('gain'), gainvalue))
+
+        print "Gain Value set to:", gainvalue.value
+        self.gainValue = gainvalue.value
+        return self.gainValue
+
+
+    def GetGainRange(self):
+        '''
+        Returns the adjustable range of the gain and sets the global variable.
+        '''
+        gainmin = c_float(0)
+        gainmax = c_float(0)
+
+        self.dll.xiGetParamFloat.argtypes = [c_void_p,c_char_p,POINTER(c_float)]
+        self.GetErrorInfo(self.dll.xiGetParamFloat(self.handle, c_char_p('gain:min'), byref(gainmin)))
+        self.GetErrorInfo(self.dll.xiGetParamFloat(self.handle, c_char_p('gain:max'), byref(gainmax)))
+
+        self.gainRange = (gainmin.value,gainmax.value)
+
+        print "Gain Range: ", self.gainRange
+
+        return self.gainRange
+
+
+    def GetGainSteps(self):
+        '''
+        Returns the sepsize of the gain and sets the global variable.
+        '''
+        gainsteps = c_float(0)
+
+        self.dll.xiGetParamFloat.argtypes = [c_void_p,c_char_p,POINTER(c_float)]
+        self.GetErrorInfo(self.dll.xiGetParamFloat(self.handle, c_char_p('gain:inc'), byref(gainsteps)))
+
+        self.gainSteps = gainsteps.value
+        print "Gain Step Size:", self.gainSteps
+
+        return self.gainSteps
+
+
+
+
 
 
 
@@ -354,27 +573,39 @@ class XimeaxiQCam_API(Camera_API):
 
 if __name__=="__main__":
     check = XimeaxiQCam_API()
-    check.GetNumberCams()
+    # check.GetNumberCams()
     
-    check.GetDeviceInfo()
+    # check.GetDeviceInfo()
+    cameralist = check.CreateCameraList()
 
     # check.CloseCamera()
-    check.OpenCamera()
-    check.StartAcquisition()
+    # check.OpenCamera()
+    # check.StartAcquisition()
+    check.StartCamera(camindex=0)
+    imagesize = check.GetImageSize()
+    satvalue = check.GetSaturationValue()
     check.GetNextImage()
     image = check.imageArray
-    # check.GetExposureTime()
-    # check.SetExposureTime(100)
-    # check.GetExposureTime()
-    check.StopAcquisition()
+    exporange = check.GetExposureTimeRange()
+    exposteps = check.GetExposureTimeSteps()
+    expotime = check.GetExposureTime()
+    expotime = check.SetExposureTime(0.062)
+    expotime = check.GetExposureTime()
+    gainrange = check.GetGainRange()
+    gainsteps = check.GetGainSteps()
+    gainvalue = check.GetGainValue()
+    gainvalue = check.SetGainValue(gainvalue=5.0)
+    gainvalue = check.GetGainValue()
+    # check.StopAcquisition()
     # check.GetDeviceName()
-    check.CloseCamera()
+    # check.CloseCamera()
+    check.StopCamera()
 
 
     plt.figure()
     plt.imshow(image)
 
-    del check.handle
+    # del check.handle
 
 
 

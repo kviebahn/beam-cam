@@ -811,7 +811,7 @@ class App_Launcher(object):
             self.CheckSaturation()
 
             if self.gui.ui.connect.isChecked():
-                if muperpxl == None:
+                if self.muperpxl == None:
                     self.upddateroipos(self.databuffer[3,-1],self.databuffer[4,-1])
                 else:
                     self.upddateroipos(self.databuffer[3,-1]/self.muperpxl,self.databuffer[4,-1]/self.muperpxl)

@@ -38,6 +38,8 @@ class Camera_API(object):
 
         self.cameraList = None
 
+        self.CamIndex = None
+
         self.imageSize = None
         self.saturationValue = None
         self.exposureTime = None
@@ -50,7 +52,7 @@ class Camera_API(object):
 
 
 
-    def StartCamera(self):
+    def StartCamera(self,camindex=0):
         '''
         This method starts the camera.
         '''
@@ -107,7 +109,7 @@ class Camera_API(object):
 
     def GetExposureTime(self):
         '''
-        This method returns the actual value of the exposure time and sets the global variable.
+        This method returns the actual value of the exposure time and sets the global variable (in ms).
         '''
 
         print "This method is not implemented here!"
@@ -117,7 +119,7 @@ class Camera_API(object):
 
     def SetExposureTime(self):
         '''
-        This method sets the exposure time to the input value (float), returns the value and sets the global variable.
+        This method sets the exposure time to the input value (float), returns the value and sets the global variable (in ms).
         '''
 
         print "This method is not implemented here!"
