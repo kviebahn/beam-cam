@@ -25,13 +25,27 @@ GNU General Public License for more details.
 Please see the README.md file for a copy of the GNU General Public License, or otherwise find it on <http://www.gnu.org/licenses/>.
 """
 
+cameratypes = ['VRmagic USB','Ximea xiQ']
+cameraapinames = ['VRmagicUsbCamAPI','XimeaxiQCamAPI']
+
 
 import GaussBeamSimulation as Sim
 reload(Sim)
 import MathematicalTools as MatTools
 reload(MatTools)
-import VRmagicUsbCamAPI as VRmagicAPI
-reload(VRmagicAPI)
+# import VRmagicUsbCamAPI as VRmagicAPI
+# reload(VRmagicAPI)
+
+cameramodules = map(__import__, cameraapinames)
+
+for i in range(len(cameramodules)):
+    reload (cameramodules[i])
+
+
+VRmagicAPI = cameramodules[0]
+reload (VRmagicAPI)
+
+
 
 from ctypes import *
 from pyqtgraph.Qt import QtCore, QtGui
@@ -46,6 +60,10 @@ import os
 
 from ImageViewerTemplate import Ui_Form
 # reload(ImageViewerTemplate)
+
+
+
+
 
 
 '''
@@ -433,10 +451,12 @@ class App_Launcher(object):
 
 
         self.gui = Ui_Window()
-        self.VRmMenu = self.InitializeCamSearch()
+        self.cameratypemenu, self.VRmMenu = self.InitializeCamSearch()
         self.InitializeSettings()
         self.InitializeView()
         
+        self.cameratypeobj = []
+        self.cameratotallist = []
         self.camera = None
         self.imagearray = None
         self.databuffer = self.CreateDataBuffer()
@@ -500,18 +520,34 @@ class App_Launcher(object):
         self.imagesize = self.camera.GetImageSize()
         self.InitializeViewBoxSize()
 
+        self.gui.roi.setPos([int(self.imagesize[0]/8.),int(self.imagesize[1]/8.)],finish=False)
+        self.gui.roi.setSize([int(self.imagesize[0]*3/4.),int(self.imagesize[1]*3/4.)],finish=False)
+
         self.saturationvalue = self.camera.GetSaturationValue()
         # Switch off status LED
         # camera.SetStatusLED(camera.CamIndex,False)
 
     def InitializeViewBoxSize(self):
         '''
-        Adapts the viewbox size to the actual image.
+        Adapts the viewbox size to the actual image and changes other image size dependent settings.
         '''
 
         self.gui.view.setRange(QtCore.QRectF(0, 0, self.imagesize[0], self.imagesize[1]))
+
+        self.gui.ui.x0Spin.setRange(0.,self.imagesize[0])
+        self.gui.ui.y0Spin.setRange(0.,self.imagesize[1])
+
         bounds = QtCore.QRectF(0,0,self.imagesize[0]-1,self.imagesize[1]-1)
         self.gui.roi.maxBounds = bounds
+
+        roisize = self.gui.roi.size()
+        roipos = self.gui.roi.pos()
+
+        if roisize[0] >= self.imagesize[0] or roisize[1] >= self.imagesize[1]:
+            self.gui.roi.setSize([int(self.imagesize[0]/2.),int(self.imagesize[1]/2.)],finish=False)
+        if roipos[0] >= (self.imagesize[0]-roisize[0]) or roipos[1] >= (self.imagesize[1]-roisize[1]):
+            self.gui.roi.setPos([int(self.imagesize[0]/4.),int(self.imagesize[1]/4.)],finish=False)
+            self.gui.roi.setSize([int(self.imagesize[0]/2.),int(self.imagesize[1]/2.)],finish=False)
 
 
     def CreateFile(self,name='test'):
@@ -546,12 +582,16 @@ class App_Launcher(object):
         self.gui.cameramenu.addAction(refreshAction)
         self.gui.cameramenu.addSeparator()
 
+        cameratypemenu = []
+        for i in range(len(cameratypes)):
+            cameratypemenutemp = self.gui.cameramenu.addMenu(cameratypes[i])
+            cameratypemenu.append(cameratypemenutemp)
         
         vrmagicMenu = self.gui.cameramenu.addMenu('VRmagic')
 
         self.gui.mainwin.connect(refreshAction,QtCore.SIGNAL('triggered()'), lambda: self.RefreshCameras())
 
-        return vrmagicMenu
+        return cameratypemenu, vrmagicMenu
 
 
     def InitializeSettings(self):
@@ -565,8 +605,19 @@ class App_Launcher(object):
 
     def InitializeView(self):
 
+        rotatemenu = self.gui.viewmenu.addMenu('Rotate View')
+        clockwiseAction = QtGui.QAction('Clockwise',rotatemenu)
+        rotatemenu.addAction(clockwiseAction)
+        counterclockwiseAction = QtGui.QAction('Counterclockwise',rotatemenu)
+        rotatemenu.addAction(counterclockwiseAction)
+
+        self.gui.mainwin.connect(clockwiseAction,QtCore.SIGNAL('triggered()'), lambda: self.updaterotanglecw())
+        self.gui.mainwin.connect(counterclockwiseAction,QtCore.SIGNAL('triggered()'), lambda: self.updaterotangleccw())
+
+
         scalingAction = QtGui.QAction('Scaling',self.gui.viewmenu)
         self.gui.viewmenu.addAction(scalingAction)
+
 
         self.gui.mainwin.connect(scalingAction,QtCore.SIGNAL('triggered()'), lambda: self.AdjustScaling())
 
@@ -618,9 +669,24 @@ class App_Launcher(object):
         totalcamnumber = 0
         camfound = False
 
-        #################################################
 
-        VRmCam = VRmagicAPI.VRmagicUSBCam_API()
+        for i in range(len(self.cameratypemenu)):
+            cameratypeobjtemp = cameramodules[i].CameraTypeSpecific_API()
+            self.cameratypeobj.append(cameratypeobjtemp)
+            tempcamlist = self.cameratypeobj[i].CreateCameraList()
+            self.cameratotallist.append(tempcamlist)
+            totalcamnumber += len(tempcamlist)
+
+        print self.cameratotallist, "Total Camera List"
+
+
+
+
+        #################################################   OLD PROCEDURE!!
+        # del self.cameratypeobj
+        totalcamnumber = 0
+
+        VRmCam = VRmagicAPI.CameraTypeSpecific_API()
         cameralist = VRmCam.CreateCameraList()
         numbercams = len(cameralist)
         totalcamnumber += numbercams
@@ -780,60 +846,46 @@ class App_Launcher(object):
                 except: # Show last image if grab failed -> Does not work (?)
                     self.imagearray = np.rot90(imagearray,-1*self.rotangle)
 
-
-
-            '''
-            ---------------------------------------------------------
-            ---------------------------------------------------------
-            ADAPT TO VARIABLE SIZING OF IMAGE VIEWBOX!! 
-            ---------------------------------------------------------
-            ---------------------------------------------------------
-            '''
-
             self.imagearray = np.rot90(self.imagearray,self.rotangle)
             
-            if self.rotangle==0 or self.rotangle==2:
-                # view.setRange(QtCore.QRectF(0, 0, 754, 480))
-                self.gui.ui.x0Spin.setRange(0.,754.)
-                self.gui.ui.y0Spin.setRange(0.,480.)
-                bounds = QtCore.QRectF(0,0,753,479)
-                self.gui.roi.maxBounds = bounds
-                roisize = self.gui.roi.size()
-                roipos = self.gui.roi.pos()
+            # if self.rotangle==0 or self.rotangle==2:
+            #     # view.setRange(QtCore.QRectF(0, 0, 754, 480))
+            #     self.gui.ui.x0Spin.setRange(0.,754.)
+            #     self.gui.ui.y0Spin.setRange(0.,480.)
+            #     bounds = QtCore.QRectF(0,0,753,479)
+            #     self.gui.roi.maxBounds = bounds
+            #     roisize = self.gui.roi.size()
+            #     roipos = self.gui.roi.pos()
 
-                # ADAPT TO IMAGE SIZE!!!!!
-                if roisize[1] >= 480:
-                    # print roisize, roipos, 'ROI'
-                    self.gui.roi.setSize([200,200],finish=False)
-                if roipos[1] >= (480-roisize[1]):
-                    # print roisize, roipos, 'ROI'
-                    self.gui.roi.setPos([200,200],finish=False)
-                    self.gui.roi.setSize([200,200],finish=False)
+            #     # ADAPT TO IMAGE SIZE!!!!!
+            #     if roisize[1] >= 480:
+            #         # print roisize, roipos, 'ROI'
+            #         self.gui.roi.setSize([200,200],finish=False)
+            #     if roipos[1] >= (480-roisize[1]):
+            #         # print roisize, roipos, 'ROI'
+            #         self.gui.roi.setPos([200,200],finish=False)
+            #         self.gui.roi.setSize([200,200],finish=False)
                     
 
                 
-            elif self.rotangle==1 or self.rotangle==3:
-                # view.setRange(QtCore.QRectF(0, 0, 480, 754))
-                self.gui.ui.x0Spin.setRange(0.,480.)
-                self.gui.ui.y0Spin.setRange(0.,754.)
-                bounds = QtCore.QRectF(0,0,479,753)
-                self.gui.roi.maxBounds = bounds
-                roisize = self.gui.roi.size()
-                roipos = self.gui.roi.pos()
-                if roisize[0] >= 480:
-                    self.gui.roi.setSize([200,200],finish=False)
-                if roipos[0] >= (480-roisize[0]):
-                    self.gui.roi.setPos([200,200],finish=False)
-                    self.gui.roi.setSize([200,200],finish=False)
+            # elif self.rotangle==1 or self.rotangle==3:
+            #     # view.setRange(QtCore.QRectF(0, 0, 480, 754))
+            #     self.gui.ui.x0Spin.setRange(0.,480.)
+            #     self.gui.ui.y0Spin.setRange(0.,754.)
+            #     bounds = QtCore.QRectF(0,0,479,753)
+            #     self.gui.roi.maxBounds = bounds
+            #     roisize = self.gui.roi.size()
+            #     roipos = self.gui.roi.pos()
+            #     if roisize[0] >= 480:
+            #         self.gui.roi.setSize([200,200],finish=False)
+            #     if roipos[0] >= (480-roisize[0]):
+            #         self.gui.roi.setPos([200,200],finish=False)
+            #         self.gui.roi.setSize([200,200],finish=False)
 
 
-            '''
-            To implement: Set only if value is changed!!
-            '''  
-
-            if self.RealData:
-                self.camera.SetExposureTime(self.gui.ui.exposureSpin.value())
-                self.camera.SetGainValue(self.gui.ui.gainSpin.value())
+            # if self.RealData:
+            #     self.camera.SetExposureTime(self.gui.ui.exposureSpin.value())
+            #     self.camera.SetGainValue(self.gui.ui.gainSpin.value())
 
             self.gui.img.setImage(self.imagearray.T.astype(float))
             self.CheckSaturation()
@@ -851,6 +903,20 @@ class App_Launcher(object):
             if self.RealData:
                 self.camera.GetNextImage()
 
+
+    def updateexposuretime(self):
+
+        if self.RealData:
+            self.camera.SetExposureTime(self.gui.ui.exposureSpin.value())
+            ExpoTime = self.camera.GetExposureTime()
+            self.gui.ui.exposureSpin.setProperty("value", ExpoTime)
+
+    def updategainvalue(self):
+
+        if self.RealData:
+            self.camera.SetGainValue(self.gui.ui.gainSpin.value())
+            GainValue = self.camera.GetGainValue()
+            self.gui.ui.gainSpin.setProperty("value", GainValue)
 
 
     def updaterotangleccw(self):
@@ -1129,7 +1195,6 @@ class App_Launcher(object):
         The ROI position is updated. The bounds are respected.
         '''
         
-        imagesize = self.imagerray.shape
         xpos = x-int(self.origroisize[0]/2.)
         xsize = self.origroisize[0]
         ysize = self.origroisize[1]
@@ -1138,15 +1203,41 @@ class App_Launcher(object):
         ypos = y-int(self.origroisize[1]/2.)
         if ypos < 0:
             ypos = 0
-        if xpos + self.origroisize[0] >= imagesize[1]:
-            xsize = imagesize[1] - xpos - 1
-        if ypos + self.origroisize[1] >= imagesize[0]:
-            ysize = imagesize[0] - ypos - 1
+        if xpos + self.origroisize[0] >= self.imagesize[0]:
+            xsize = self.imagesize[0] - xpos - 1
+        if ypos + self.origroisize[1] >= self.imagesize[1]:
+            ysize = self.imagesize[1] - ypos - 1
 
 
         self.gui.roi.setPos([xpos,ypos],finish=False)
         self.gui.roi.setSize([xsize,ysize],finish=False)
         # roi.stateChanged()
+
+    def autoadjustroi(self):
+
+
+        waistx = self.databuffer[5,-1]
+        waisty = self.databuffer[6,-1]
+
+        sizex = 6*waistx
+        sizey = 6*waisty
+        posx = self.databuffer[3,-1] - 3*waistx
+        posy = self.databuffer[4,-1] - 3*waisty
+
+        if posx < 0:
+            posx = 0
+        if posx+sizex >= self.imagesize[0]:
+            sizex = self.imagesize[0] -posx -1
+        if posy < 0:
+            posy = 0
+        if posy+sizey >= self.imagesize[1]:
+            sizey = self.imagesize[1] -posy -1
+
+        self.gui.roi.setPos([posx,posy],finish=False)
+        self.gui.roi.setSize([sizex,sizey],finish=False)
+
+
+
 
 
     def runApp(self):
@@ -1167,13 +1258,21 @@ class App_Launcher(object):
         self.gui.roi.sigRegionChangeFinished.connect(self.updateRoi)
 
         # When the 'Rotate counterclockwise' button is clicked, call 'updaterotangleccw'
-        self.gui.ui.rotccw.clicked.connect(self.updaterotangleccw)
+        # self.gui.ui.rotccw.clicked.connect(self.updaterotangleccw)
 
         # When the 'Rotate clockwise' button is clicked, call 'updaterotanglecw'
-        self.gui.ui.rotcw.clicked.connect(self.updaterotanglecw)
+        # self.gui.ui.rotcw.clicked.connect(self.updaterotanglecw)
+
+        self.gui.ui.autoscale.clicked.connect(self.autoadjustroi)
+
+        self.gui.ui.exposureSpin.valueChanged.connect(self.updateexposuretime)
+
+        self.gui.ui.gainSpin.valueChanged.connect(self.updategainvalue)
 
         # When the timer is timed out, 'updateview' is called
         self.viewtimer.timeout.connect(self.updateview)
+
+
         
         if self.camera != None:
             # Start the timer: time out after 0 ms

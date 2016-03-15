@@ -141,7 +141,7 @@ class GainProps(Structure):
 
 
 
-class VRmagicUSBCam_API(Camera_API):
+class CameraTypeSpecific_API(Camera_API):
     '''Functions for the VR Magic USB Camera.'''
 
 

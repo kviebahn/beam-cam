@@ -182,25 +182,34 @@ class Ui_Form(object):
 
 
 
+        '''Defines the 'Autoscale ROI' push button'''
+        self.autoscale =  QtGui.QPushButton('Autoscale ROI')
+        self.autoscale.setObjectName(_fromUtf8("autoscale"))
+        self.gridLayout.addWidget(self.autoscale, 2, 4, 1, 1)
+        self.autoscale.setCheckable(False)
+        self.autoscale.setToolTip('Automatically scale the ROI to three times the beam waist')
+
         '''Defines the 'Connect ROI' push button'''
         self.connect =  QtGui.QPushButton('Connect ROI')
         self.connect.setObjectName(_fromUtf8("connect"))
-        self.gridLayout.addWidget(self.connect, 2, 4, 1, 1)
+        self.gridLayout.addWidget(self.connect, 3, 4, 1, 1)
         self.connect.setCheckable(True)
         self.connect.setToolTip('Connect position of ROI<br>with the position of the peak')
 
         '''Defines the 'Hold' push button'''
         self.hold =  QtGui.QPushButton('Hold')
         self.hold.setObjectName(_fromUtf8("hold"))
-        self.gridLayout.addWidget(self.hold, 3, 4, 1, 1)
+        self.gridLayout.addWidget(self.hold, 4, 4, 1, 1)
         self.hold.setCheckable(True)
         self.hold.setToolTip('Pause the live view')
         # self.hold.setChecked(False)
 
-        '''Defins the text box for the 'orientation' heading'''
-        self.orientationlabel = QtGui.QLabel(Form)
-        self.orientationlabel.setObjectName(_fromUtf8("orientationlabel"))
-        self.gridLayout.addWidget(self.orientationlabel, 5, 4, 1, 1)
+
+
+        # '''Defins the text box for the 'orientation' heading'''
+        # self.orientationlabel = QtGui.QLabel(Form)
+        # self.orientationlabel.setObjectName(_fromUtf8("orientationlabel"))
+        # self.gridLayout.addWidget(self.orientationlabel, 5, 4, 1, 1)
 
         # '''Defines the buttons for choosing the orientation'''
         # self.OrientationGroup = QtGui.QButtonGroup(Form)
@@ -218,19 +227,19 @@ class Ui_Form(object):
         # self.OrientationGroup.addButton(self.vertRadio)
 
 
-        '''Defines the 'Rotate counterclockwise' push button'''
-        self.rotccw =  QtGui.QPushButton('Rotate counterclockwise')
-        self.rotccw.setObjectName(_fromUtf8("rotccw"))
-        self.gridLayout.addWidget(self.rotccw, 6, 4, 1, 1)
-        self.rotccw.setToolTip('Rotate the image 90 degrees counterclockwise')
+        # '''Defines the 'Rotate counterclockwise' push button'''
+        # self.rotccw =  QtGui.QPushButton('Rotate counterclockwise')
+        # self.rotccw.setObjectName(_fromUtf8("rotccw"))
+        # self.gridLayout.addWidget(self.rotccw, 6, 4, 1, 1)
+        # self.rotccw.setToolTip('Rotate the image 90 degrees counterclockwise')
         # self.hold.setChecked(False)
 
 
-        '''Defines the 'Rotate clockwise' push button'''
-        self.rotcw =  QtGui.QPushButton('Rotate clockwise')
-        self.rotcw.setObjectName(_fromUtf8("rotcw"))
-        self.gridLayout.addWidget(self.rotcw, 7, 4, 1, 1)
-        self.rotcw.setToolTip('Rotate the image 90 degrees clockwise')
+        # '''Defines the 'Rotate clockwise' push button'''
+        # self.rotcw =  QtGui.QPushButton('Rotate clockwise')
+        # self.rotcw.setObjectName(_fromUtf8("rotcw"))
+        # self.gridLayout.addWidget(self.rotcw, 7, 4, 1, 1)
+        # self.rotcw.setToolTip('Rotate the image 90 degrees clockwise')
 
 
 
@@ -330,7 +339,7 @@ class Ui_Form(object):
         self.gainlabel.setText(QtGui.QApplication.translate("Form", "Gain", None, QtGui.QApplication.UnicodeUTF8))
         
 
-        self.orientationlabel.setText(QtGui.QApplication.translate("Form", "Orientation", None, QtGui.QApplication.UnicodeUTF8))
+        # self.orientationlabel.setText(QtGui.QApplication.translate("Form", "Orientation", None, QtGui.QApplication.UnicodeUTF8))
         # self.horRadio.setText(QtGui.QApplication.translate("Form", "horizontal", None))
         # self.vertRadio.setText(QtGui.QApplication.translate("Form", "vertical", None))
 

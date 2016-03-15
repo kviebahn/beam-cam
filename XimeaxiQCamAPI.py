@@ -28,6 +28,7 @@ Please see the README.md file for a copy of the GNU General Public License, or o
 
 from CameraAPI import Camera_API
 
+
 from XimeaxiQCamAPIconstants import *
 
 from ctypes import *
@@ -154,7 +155,7 @@ class ImageShort(Structure):
 
 
 
-class XimeaxiQCam_API(Camera_API):
+class CameraTypeSpecific_API(Camera_API):
     '''Functions for the Ximea xiQ Camera.'''
 
 
