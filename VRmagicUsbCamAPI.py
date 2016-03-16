@@ -147,6 +147,8 @@ class CameraTypeSpecific_API(Camera_API):
 
     def __init__(self, dllPath='vrmusbcam2.dll'):
 
+        super(CameraTypeSpecific_API,self).__init__()
+
         # Connect to library
         self.dll = cdll.LoadLibrary(dllPath)
 

@@ -25,25 +25,59 @@ GNU General Public License for more details.
 Please see the README.md file for a copy of the GNU General Public License, or otherwise find it on <http://www.gnu.org/licenses/>.
 """
 
+
+
 cameratypes = ['VRmagic USB','Ximea xiQ']
 cameraapinames = ['VRmagicUsbCamAPI','XimeaxiQCamAPI']
+
+
+
+# import os
+# os.environ.setdefault('LANG','en_US')
+
+import importlib
+
+'''
+WORKAROUND FOR ERROR USING XIMEA CAMERA!!! TRY TO AVOID!!!
+For Ximea Cameras, error when executing ROI.getArrayRegion().
+in scipy.ndimage.filters fails to execute "from . import _ni_support"
+According to test in debug mode: at this point __name__ = None.
+-Maybe install pyqtgraph properly, no just copy folder.
+-Or 64bit issue.
+NOT UNDERSTOOD AT THE MOMENT!!
+'''
+import scipy.ndimage.filters
+'''----------------------------------------------------------'''
+'''----------------------------------------------------------'''
+
+
 
 
 import GaussBeamSimulation as Sim
 reload(Sim)
 import MathematicalTools as MatTools
 reload(MatTools)
-# import VRmagicUsbCamAPI as VRmagicAPI
-# reload(VRmagicAPI)
+import VRmagicUsbCamAPI as VRmagicAPI
+reload(VRmagicAPI)
 
-cameramodules = map(__import__, cameraapinames)
+# import XimeaxiQCamAPI as VRmagicAPI
+# reload (VRmagicAPI)
+
+# import XimeaxiQCamAPI as XimeaAPI
+# reload (XimeaAPI)
+
+# cameramodules = map(__import__, cameraapinames)
+cameramodules = []
+for i in cameraapinames:
+    tempmodule = importlib.import_module(i)
+    cameramodules.append(tempmodule)
 
 for i in range(len(cameramodules)):
     reload (cameramodules[i])
 
 
-VRmagicAPI = cameramodules[0]
-reload (VRmagicAPI)
+# VRmagicAPI = cameramodules[0]
+# reload (VRmagicAPI)
 
 
 
@@ -665,6 +699,7 @@ class App_Launcher(object):
         Starts first available camera.
         TODO: Adapt for multiple camera types
         '''
+        # del self.camera
 
         totalcamnumber = 0
         camfound = False
@@ -673,47 +708,98 @@ class App_Launcher(object):
         for i in range(len(self.cameratypemenu)):
             cameratypeobjtemp = cameramodules[i].CameraTypeSpecific_API()
             self.cameratypeobj.append(cameratypeobjtemp)
-            tempcamlist = self.cameratypeobj[i].CreateCameraList()
+
+            print self.cameratypeobj
+
+        for obj in self.cameratypeobj:
+            tempcamlist = obj.CreateCameraList()
             self.cameratotallist.append(tempcamlist)
             totalcamnumber += len(tempcamlist)
+            # del tempcamlist
+
+        # o1 = self.cameratypeobj[0]
+        # o2 = self.cameratypeobj[1]
+
+        # o1 = cameramodules[0].CameraTypeSpecific_API()
+        # o2 = cameramodules[1].CameraTypeSpecific_API()
+        
+        # o1 = VRmagicAPI.CameraTypeSpecific_API()
+        # o2 = XimeaAPI.CameraTypeSpecific_API()
+
+        # l2 = o2.CreateCameraList()
+        # self.cameratotallist.append(l2)
+        # l1 = o1.CreateCameraList()
+        # self.cameratotallist.append(l1)
+        # l2 = o2.CreateCameraList()
+        # self.cameratotallist.append(l2)
+
+
+        # self.cameratotallist = map(cameratypeobj[i].CreateCameraList,cameratypeobj)
 
         print self.cameratotallist, "Total Camera List"
+
+        self.RealData = True
+
+        if totalcamnumber != 0:
+            for i in range(len(cameratypes)):
+                if not camfound:
+                    if len(self.cameratotallist[i]) != 0:
+                        self.camera = self.cameratypeobj[i]
+                        self.camera.StartCamera(camindex=0)
+                        self.InitializeCam()
+                        camfound = True
+
+
+        # if self.cameratypemenu[0].isVisible():
+        #     print "IS VISIBLE!!"
+
 
 
 
 
         #################################################   OLD PROCEDURE!!
         # del self.cameratypeobj
-        totalcamnumber = 0
+        # totalcamnumber = 0
 
-        VRmCam = VRmagicAPI.CameraTypeSpecific_API()
-        cameralist = VRmCam.CreateCameraList()
-        numbercams = len(cameralist)
-        totalcamnumber += numbercams
+        # VRmCam = VRmagicAPI.CameraTypeSpecific_API()
+        # VRmCam = self.cameratypeobj[0]
+        # cameralist = VRmCam.CreateCameraList()
+        # cameralist = self.cameratotallist[0]
+        # print "Length Cameralist", len(cameralist)
+        # numbercams = len(cameralist)
+        # totalcamnumber += numbercams
+
+        # print "Camera before", VRmCam
         
-        self.RealData = True
+        # print numbercams, 'Number Cams'
+
+        # self.RealData = True
 
         # ADD HANDLING IF NO CAMERA IS AVAILABLE/PLUGGED TO THE PC
-        if numbercams != 0:
-            if not camfound:
-                self.camera = VRmCam
-                self.camera.StartCamera(camindex=0)
-                self.InitializeCam()
-                camfound = True
-            for i in range(numbercams):
-                name = cameralist[i]
-                # testaction = QtGui.QAction(name, mainwin)
-                changeaction = self.VRmMenu.addAction(name)
-                self.gui.mainwin.connect(changeaction,QtCore.SIGNAL('triggered()'), lambda i=i: self.ChangeCamera(camindex=i))
-                self.VRmMenu.addAction(changeaction)
+        # if numbercams != 0:
+        #     if not camfound:
+        #         self.camera = VRmCam
+        #         self.camera.StartCamera(camindex=0)
+        #         self.InitializeCam()
+        #         camfound = True
+        #         del VRmCam
+        #     for i in range(numbercams):
+        #         name = cameralist[i]
+        #         # testaction = QtGui.QAction(name, mainwin)
+        #         changeaction = self.VRmMenu.addAction(name)
+        #         self.gui.mainwin.connect(changeaction,QtCore.SIGNAL('triggered()'), lambda i=i: self.ChangeCamera(camindex=i))
+        #         self.VRmMenu.addAction(changeaction)
                 
         
         if camfound:
             self.viewtimer.start()
         if not camfound:
-            self.MessageNoCamFound()
             self.camera = None
+            self.MessageNoCamFound()
+            
             # print 'ERROR -- No cameras found!!'
+
+        print "Camera", self.camera
 
 
     def RefreshCameras(self):
@@ -840,11 +926,16 @@ class App_Launcher(object):
                 self.simulation.ChooseImage()
                 self.imagearray = self.simulation.image
             else:
-                try:
-                    self.camera.GetNextImage()
-                    self.imagearray = self.camera.GiveImage()
-                except: # Show last image if grab failed -> Does not work (?)
-                    self.imagearray = np.rot90(imagearray,-1*self.rotangle)
+                # try:
+                #     self.camera.GetNextImage()
+                #     self.imagearray = self.camera.GiveImage()
+                # except: # Show last image if grab failed -> Does not work (?)
+                #     self.imagearray = np.rot90(self.imagearray,-1*self.rotangle)
+
+                self.camera.GetNextImage()
+                self.imagearray = self.camera.GiveImage()
+
+            # print 'Image before updateROI: ',self.imagearray[23,65]
 
             self.imagearray = np.rot90(self.imagearray,self.rotangle)
             
@@ -888,6 +979,7 @@ class App_Launcher(object):
             #     self.camera.SetGainValue(self.gui.ui.gainSpin.value())
 
             self.gui.img.setImage(self.imagearray.T.astype(float))
+            # print "name", __name__
             self.CheckSaturation()
 
             if self.gui.ui.connect.isChecked():
@@ -896,7 +988,8 @@ class App_Launcher(object):
                 else:
                     self.upddateroipos(self.databuffer[3,-1]/self.muperpxl,self.databuffer[4,-1]/self.muperpxl)
 
-            
+            # print "name", __name__
+
             self.updateRoi()
 
         else:
@@ -958,6 +1051,10 @@ class App_Launcher(object):
         '''
 
         # Get ROI data
+        # print 'Image: ',self.imagearray.T.dtype
+
+        # print "name", __name__
+
         selected,coorddata = self.gui.roi.getArrayRegion(self.imagearray.T, self.gui.img,returnMappedCoords=True)
         xhor = coorddata[0][:,0]
         if self.muperpxl != None:

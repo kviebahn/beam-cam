@@ -161,6 +161,8 @@ class CameraTypeSpecific_API(Camera_API):
 
     def __init__(self, dllPath='xiapi64.dll'):
 
+        super(CameraTypeSpecific_API,self).__init__()
+
         # Connect to library
         self.dll = cdll.LoadLibrary(dllPath)
 
@@ -184,6 +186,8 @@ class CameraTypeSpecific_API(Camera_API):
         self.numberCams = None  
         self.handle = c_void_p()
         self.imagecontainer = Image()
+
+        # self.GetErrorInfo(self.GetNumberCams())
 
 
     def GetErrorInfo(self,errornum=0):
@@ -213,27 +217,27 @@ class CameraTypeSpecific_API(Camera_API):
         Returns the device name.
         '''
 
-
+        # print "name", __name__
     	camid =c_ulong(self.CamIndex)
     	stringsize = c_ulong(0)
     	# inf =create_string_buffer(512)
     	inf = c_char_p('')
     	# stringbuffer = create_string_buffer('device_name')
-    	parameter = c_wchar_p(XI_PRM_DEVICE_NAME)
+    	# parameter = c_wchar_p(XI_PRM_DEVICE_NAME)
     	self.dll.xiGetDeviceInfoString.argtypes = [c_ulong,c_char_p,c_char_p,POINTER(c_ulong)]
     	# print 'defined argtypes'
 
     	self.GetErrorInfo(self.dll.xiGetDeviceInfoString(camid, c_char_p('device_name'), inf, byref(stringsize)))
-    	print 'read out info string'
-
+    	# print 'read out info string'
+        # print "name", __name__
     	# print "Success", stringsize
     	
     	name = string_at(inf)
-    	del inf
-    	
+    	# del inf
+    	# print "name", __name__
     	# name =''.join(name)
     	# print "Device Name Length: ", stringsize.value
-    	print "Device Name", name
+    	# print "Device Name", name
 
         return name
     	
@@ -285,14 +289,14 @@ class CameraTypeSpecific_API(Camera_API):
     	inf2 = c_char_p('')
 
     	self.dll.xiGetParamString.argtypes = [c_void_p,c_char_p,c_char_p,POINTER(c_ulong)]
-    	print 'defined argtypes'
+    	# print 'defined argtypes'
 
     	self.GetErrorInfo(self.dll.xiGetParamString(self.handle, c_char_p('device_id'), inf2, byref(stringsize)))
 
     	name2 = string_at(inf2)
 
-    	print "Device ID Length: ", stringsize.value
-    	print "Device ID", name2
+    	# print "Device ID Length: ", stringsize.value
+    	# print "Device ID", name2
 
 
 
@@ -308,8 +312,9 @@ class CameraTypeSpecific_API(Camera_API):
         '''
 
         self.CamIndex = camindex
-
+        print "name", __name__
         self.OpenCamera()
+        print "name", __name__
         self.StartAcquisition()
 
         print 'Cam started'
@@ -337,6 +342,10 @@ class CameraTypeSpecific_API(Camera_API):
         strings (their serial number).
         '''
 
+        # numbercams = c_uint32(0)
+        # self.GetErrorInfo(self.dll.xiGetNumberDevices(byref(numbercams)))
+        print "name", __name__
+
         self.GetErrorInfo(self.GetNumberCams())
         cameralist = []
         if self.numberCams != 0:
@@ -346,15 +355,15 @@ class CameraTypeSpecific_API(Camera_API):
                 
                 addlist = [serial]
                 cameralist = cameralist + addlist
-                print cameralist, "cameralist"    
+                # print cameralist, "cameralist"    
                 i += 1
             
         else:
             print 'ERROR -- No cameras found!!'
 
         self.cameraList = cameralist
-        return cameralist
-
+        return self.cameraList
+        print "name", __name__
 
     def GetNextImage(self):
         '''
@@ -367,13 +376,13 @@ class CameraTypeSpecific_API(Camera_API):
         WARNING: Only working with MONO-8/RAW-8 format; MONO-16/RAW-16 support implemented, but not tested;
         no colors supported yet (RGB24/32 formats)!
         '''
-
+        # print "name", __name__
         timeout = c_ulong(5000)
         self.dll.xiGetImage.argtypes = [c_void_p,c_ulong,POINTER(Image)]
         self.GetErrorInfo(self.dll.xiGetImage(self.handle,timeout,byref(self.imagecontainer)))
 
-        print 'Get Image'
-        print ImageFormat[self.imagecontainer.frm] ,"Color Format"
+        # print 'Get Image'
+        # print ImageFormat[self.imagecontainer.frm] ,"Color Format"
         # print self.imagecontainer.width, "image width"
         # print self.imagecontainer.height, "image height"
         # print 'image', self.imagecontainer.bp
@@ -393,12 +402,13 @@ class CameraTypeSpecific_API(Camera_API):
         # print 'imagedatalist', imagearray
         # print 'imagesize', len(imagearray)
         imagearray = imagearray.reshape((int(self.imagecontainer.height),int(self.imagecontainer.width)))
-        print 'Imageshape', imagearray.shape
-        print 'Image Data Type', imagearray.dtype
-        self.imageArray = imagearray.astype(float)
+        # print 'Imageshape', imagearray.shape
+        # print 'Image Data Type', imagearray.dtype
+        self.imageArray = imagearray.astype(np.int32)
+        # self.imageArray = imagearray
         # print 'Imagelist', self.imageArray[588,458]
 
-
+        # print "name", __name__
 
 
     def GetImageSize(self):
@@ -454,7 +464,7 @@ class CameraTypeSpecific_API(Camera_API):
     	self.GetErrorInfo(self.dll.xiGetParamInt(self.handle, c_char_p('exposure'), byref(expotime)))
 
         self.exposureTime = expotime.value/1000.
-        print self.exposureTime, "Exposure time in ms"
+        # print self.exposureTime, "Exposure time in ms"
         return self.exposureTime
 
 
@@ -483,7 +493,7 @@ class CameraTypeSpecific_API(Camera_API):
 
         self.exposureRange = (expomin.value/1000.,expomax.value/1000.)
 
-        print "Exposure Range: ", self.exposureRange
+        # print "Exposure Range: ", self.exposureRange
 
         return self.exposureRange
 
@@ -501,7 +511,7 @@ class CameraTypeSpecific_API(Camera_API):
         self.GetErrorInfo(self.dll.xiGetParamInt(self.handle, c_char_p('exposure:inc'), byref(exposteps)))
 
         self.exposureSteps = exposteps.value/1000.
-        print "Expo Steps: ", self.exposureSteps
+        # print "Expo Steps: ", self.exposureSteps
         return self.exposureSteps
 
 
@@ -516,7 +526,7 @@ class CameraTypeSpecific_API(Camera_API):
         self.dll.xiGetParamFloat.argtypes = [c_void_p,c_char_p,POINTER(c_float)]
         self.GetErrorInfo(self.dll.xiGetParamFloat(self.handle, c_char_p('gain'), byref(gainvalue)))
 
-        print gainvalue.value, "Gain"
+        # print gainvalue.value, "Gain"
 
         self.gainValue = gainvalue.value
         return self.gainValue
@@ -533,7 +543,7 @@ class CameraTypeSpecific_API(Camera_API):
         self.dll.xiSetParamFloat.argtypes = [c_void_p,c_char_p,c_float]
         self.GetErrorInfo(self.dll.xiSetParamFloat(self.handle, c_char_p('gain'), gainvalue))
 
-        print "Gain Value set to:", gainvalue.value
+        # print "Gain Value set to:", gainvalue.value
         self.gainValue = gainvalue.value
         return self.gainValue
 
@@ -551,7 +561,7 @@ class CameraTypeSpecific_API(Camera_API):
 
         self.gainRange = (gainmin.value,gainmax.value)
 
-        print "Gain Range: ", self.gainRange
+        # print "Gain Range: ", self.gainRange
 
         return self.gainRange
 
@@ -566,7 +576,7 @@ class CameraTypeSpecific_API(Camera_API):
         self.GetErrorInfo(self.dll.xiGetParamFloat(self.handle, c_char_p('gain:inc'), byref(gainsteps)))
 
         self.gainSteps = gainsteps.value
-        print "Gain Step Size:", self.gainSteps
+        # print "Gain Step Size:", self.gainSteps
 
         return self.gainSteps
 
@@ -613,7 +623,7 @@ if __name__=="__main__":
 
 
     plt.figure()
-    plt.imshow(image)
+    plt.imshow(image.astype(float))
 
     # del check.handle
 
