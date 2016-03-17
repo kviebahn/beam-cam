@@ -477,7 +477,7 @@ class CameraTypeSpecific_API(Camera_API):
 
         self.exposureTime = expotime.value/1000.
 
-    	print "Set Exposure Time to :", self.exposureTime
+    	# print "Set Exposure Time to :", self.exposureTime
 
 
     def GetExposureTimeRange(self):

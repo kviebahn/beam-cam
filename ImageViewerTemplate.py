@@ -182,24 +182,76 @@ class Ui_Form(object):
 
 
 
+        '''Defines the heading for the 'fit options' column'''
+        self.fitoptionslabel = QtGui.QLabel(Form)
+        self.fitoptionslabel.setObjectName(_fromUtf8("fitoptionslabel"))
+        self.gridLayout.addWidget(self.fitoptionslabel, 2, 4, 1, 1)
+
+        self.fitoptgroup = QtGui.QButtonGroup(Form)
+        '''Defines the 'Sum over ROI' push button'''
+        self.fitsum =  QtGui.QPushButton('Sum Over ROI')
+        self.fitsum.setObjectName(_fromUtf8("fitsum"))
+        self.gridLayout.addWidget(self.fitsum, 3, 4, 1, 1)
+        self.fitsum.setCheckable(True)
+        self.fitsum.setToolTip('For fitting a gaussian the vertically/horizontally summed up data of \
+            the ROI is used')
+        self.fitsum.setChecked(True)
+
+        '''Defines the 'Select Data at Peak' push button'''
+        self.fitline =  QtGui.QPushButton('Select Data at Peak')
+        self.fitline.setObjectName(_fromUtf8("fitline"))
+        self.gridLayout.addWidget(self.fitline, 4, 4, 1, 1)
+        self.fitline.setCheckable(True)
+        self.fitline.setToolTip('For fitting a gaussian the vertical/horizontal line of data \
+            at the peak is selec')
+
+        self.fitoptgroup.addButton(self.fitsum)
+        self.fitoptgroup.addButton(self.fitline)
+
+
+        '''Defines the buttons for the method for select data at peak fit'''
+        self.plotselectedmethodgroup = QtGui.QButtonGroup(Form)
+
+        self.maxbeforeRadio = QtGui.QRadioButton(Form)
+        # if self.fitline.isChecked():
+        #     self.maxbeforeRadio.setChecked(True)
+        self.maxbeforeRadio.setChecked(True)
+        self.maxbeforeRadio.setObjectName(_fromUtf8("maxbeforeRadio"))
+        self.gridLayout.addWidget(self.maxbeforeRadio, 5, 4, 1, 1)
+
+        self.absmaxRadio = QtGui.QRadioButton(Form)
+        # self.absmaxRadio.setChecked(True)
+        self.absmaxRadio.setObjectName(_fromUtf8("absmaxRadio"))
+        self.gridLayout.addWidget(self.absmaxRadio, 6, 4, 1, 1)
+        # self.absmaxRadio.setCheckable(False)
+
+        self.selfmaxRadio = QtGui.QRadioButton(Form)
+        self.selfmaxRadio.setObjectName(_fromUtf8("selfmaxRadio"))
+        self.gridLayout.addWidget(self.selfmaxRadio, 7, 4, 1, 1)
+
+        self.plotselectedmethodgroup.addButton(self.maxbeforeRadio)
+        self.plotselectedmethodgroup.addButton(self.absmaxRadio)
+        self.plotselectedmethodgroup.addButton(self.selfmaxRadio)
+
+
         '''Defines the 'Autoscale ROI' push button'''
         self.autoscale =  QtGui.QPushButton('Autoscale ROI')
         self.autoscale.setObjectName(_fromUtf8("autoscale"))
-        self.gridLayout.addWidget(self.autoscale, 2, 4, 1, 1)
+        self.gridLayout.addWidget(self.autoscale, 2, 5, 1, 1)
         self.autoscale.setCheckable(False)
         self.autoscale.setToolTip('Automatically scale the ROI to three times the beam waist')
 
         '''Defines the 'Connect ROI' push button'''
         self.connect =  QtGui.QPushButton('Connect ROI')
         self.connect.setObjectName(_fromUtf8("connect"))
-        self.gridLayout.addWidget(self.connect, 3, 4, 1, 1)
+        self.gridLayout.addWidget(self.connect, 3, 5, 1, 1)
         self.connect.setCheckable(True)
         self.connect.setToolTip('Connect position of ROI<br>with the position of the peak')
 
         '''Defines the 'Hold' push button'''
         self.hold =  QtGui.QPushButton('Hold')
         self.hold.setObjectName(_fromUtf8("hold"))
-        self.gridLayout.addWidget(self.hold, 4, 4, 1, 1)
+        self.gridLayout.addWidget(self.hold, 4, 5, 1, 1)
         self.hold.setCheckable(True)
         self.hold.setToolTip('Pause the live view')
         # self.hold.setChecked(False)
@@ -246,24 +298,24 @@ class Ui_Form(object):
         '''Defines the heading for the 'options' column'''
         self.optionslabel = QtGui.QLabel(Form)
         self.optionslabel.setObjectName(_fromUtf8("optionslabel"))
-        self.gridLayout.addWidget(self.optionslabel, 2, 5, 1, 1)
+        self.gridLayout.addWidget(self.optionslabel, 5, 5, 1, 1)
 
         '''Defines the check box for fitting'''
         self.fitCheck = QtGui.QCheckBox(Form)
         self.fitCheck.setObjectName(_fromUtf8("fitCheck"))
-        self.gridLayout.addWidget(self.fitCheck, 3, 5, 1, 1)
+        self.gridLayout.addWidget(self.fitCheck, 6, 5, 1, 1)
         self.fitCheck.setChecked(True)
 
         '''Defines the check box for tracking'''
         self.trackCheck = QtGui.QCheckBox(Form)
         self.trackCheck.setObjectName(_fromUtf8("trackCheck"))
-        self.gridLayout.addWidget(self.trackCheck, 4, 5, 1, 1)
+        self.gridLayout.addWidget(self.trackCheck, 7, 5, 1, 1)
         self.trackCheck.setChecked(True)
 
         '''Defines the check box for the reference beam'''
         self.refCheck = QtGui.QCheckBox(Form)
         self.refCheck.setObjectName(_fromUtf8("refCheck"))
-        self.gridLayout.addWidget(self.refCheck, 5, 5, 1, 1)
+        self.gridLayout.addWidget(self.refCheck, 8, 5, 1, 1)
         self.refCheck.setChecked(True)
 
 
@@ -343,6 +395,11 @@ class Ui_Form(object):
         # self.horRadio.setText(QtGui.QApplication.translate("Form", "horizontal", None))
         # self.vertRadio.setText(QtGui.QApplication.translate("Form", "vertical", None))
 
+        self.fitoptionslabel.setText(QtGui.QApplication.translate("Form", "Fit Options", None, QtGui.QApplication.UnicodeUTF8))
+        self.maxbeforeRadio.setText(QtGui.QApplication.translate("Form", "Maximum Before", None))
+        self.absmaxRadio.setText(QtGui.QApplication.translate("Form", " Absolute Maximum", None))
+        self.selfmaxRadio.setText(QtGui.QApplication.translate("Form", " Self Defined Maximum", None))
+
         self.optionslabel.setText(QtGui.QApplication.translate("Form", "Options", None, QtGui.QApplication.UnicodeUTF8))
         self.fitCheck.setText(QtGui.QApplication.translate("Form", "Show Fit", None, QtGui.QApplication.UnicodeUTF8))
         self.trackCheck.setText(QtGui.QApplication.translate("Form", "Track Beam", None, QtGui.QApplication.UnicodeUTF8))
@@ -350,10 +407,10 @@ class Ui_Form(object):
 
         self.evplotlabel.setText(QtGui.QApplication.translate("Form", "Time Evolution Plot", None, QtGui.QApplication.UnicodeUTF8))
         self.ampRadio.setText(QtGui.QApplication.translate("Form", "Amplitude", None))
-        self.poshorRadio.setText(QtGui.QApplication.translate("Form", "Horizontal position", None))
-        self.posvertRadio.setText(QtGui.QApplication.translate("Form", "Vertical position", None))
-        self.waisthorRadio.setText(QtGui.QApplication.translate("Form", "Horizontal waist", None))
-        self.waistvertRadio.setText(QtGui.QApplication.translate("Form", "Vertical waist", None))
+        self.poshorRadio.setText(QtGui.QApplication.translate("Form", "Horizontal Position", None))
+        self.posvertRadio.setText(QtGui.QApplication.translate("Form", "Vertical Position", None))
+        self.waisthorRadio.setText(QtGui.QApplication.translate("Form", "Horizontal Waist", None))
+        self.waistvertRadio.setText(QtGui.QApplication.translate("Form", "Vertical Waist", None))
         self.distRadio.setText(QtGui.QApplication.translate("Form", "Distance", None))
 
 

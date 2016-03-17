@@ -57,8 +57,8 @@ import GaussBeamSimulation as Sim
 reload(Sim)
 import MathematicalTools as MatTools
 reload(MatTools)
-import VRmagicUsbCamAPI as VRmagicAPI
-reload(VRmagicAPI)
+# import VRmagicUsbCamAPI as VRmagicAPI
+# reload(VRmagicAPI)
 
 # import XimeaxiQCamAPI as VRmagicAPI
 # reload (VRmagicAPI)
@@ -485,14 +485,18 @@ class App_Launcher(object):
 
 
         self.gui = Ui_Window()
-        self.cameratypemenu, self.VRmMenu = self.InitializeCamSearch()
+        self.cameratypemenu = self.InitializeCamSearch()
         self.InitializeSettings()
         self.InitializeView()
         
         self.cameratypeobj = []
         self.cameratotallist = []
         self.camera = None
+        self.activecamtype = cameratypes[0]
+        self.activecamserial = None
+
         self.imagearray = None
+        self.databuffersize = 40000
         self.databuffer = self.CreateDataBuffer()
         self.rotangle = 0
         self.starttime = time.time()
@@ -601,7 +605,33 @@ class App_Launcher(object):
         Stops old camera, starts new camera
         TODO: Adapt for multiple camera types
         '''
+        # print camindex, "Camindex"
         self.camera.StopCamera()
+
+        totcamnr = 0
+        camset = False
+        for i in range(len(cameratypes)):
+            # print "Enter Loop"
+            # print "index before", len(self.cameratotallist[i])+totcamnr-1
+            if (len(self.cameratotallist[i])+totcamnr) > camindex:
+                # print "index", len(self.cameratotallist[i])+totcamnr-1
+                if not camset:
+                    self.camera = self.cameratypeobj[i]
+                    # print self.camera, "Check Cam"
+                    camindex = camindex-totcamnr
+                    camset = True
+
+                    self.activecamtype = cameratypes[i]
+                    self.activecamserial = self.cameratotallist[i][camindex]
+                else: 
+                    pass
+                
+            else:
+                totcamnr += len(self.cameratotallist[i])
+                # print "Totcamnr:", totcamnr
+
+        # print "Camera", self.camera
+
         self.camera.StartCamera(camindex=camindex)
         self.InitializeCam()
 
@@ -621,11 +651,11 @@ class App_Launcher(object):
             cameratypemenutemp = self.gui.cameramenu.addMenu(cameratypes[i])
             cameratypemenu.append(cameratypemenutemp)
         
-        vrmagicMenu = self.gui.cameramenu.addMenu('VRmagic')
+        # vrmagicMenu = self.gui.cameramenu.addMenu('VRmagic')
 
         self.gui.mainwin.connect(refreshAction,QtCore.SIGNAL('triggered()'), lambda: self.RefreshCameras())
 
-        return cameratypemenu, vrmagicMenu
+        return cameratypemenu
 
 
     def InitializeSettings(self):
@@ -634,7 +664,13 @@ class App_Launcher(object):
         thresholdAction = QtGui.QAction('Threshold',saturationMenu)
         saturationMenu.addAction(thresholdAction)
 
-        self.gui.mainwin.connect(thresholdAction,QtCore.SIGNAL('triggered()'), lambda: self.AdjustSaturationThreshold())
+        buffersizeAction = QtGui.QAction('Buffer Size',self.gui.settingsmenu)
+        self.gui.settingsmenu.addAction(buffersizeAction)
+
+        self.gui.mainwin.connect(thresholdAction,QtCore.SIGNAL('triggered()'),\
+         lambda: self.AdjustSaturationThreshold())
+        self.gui.mainwin.connect(buffersizeAction,QtCore.SIGNAL('triggered()'),\
+         lambda: self.AdjustBufferSize())
 
 
     def InitializeView(self):
@@ -684,10 +720,29 @@ class App_Launcher(object):
 
     def AdjustSaturationThreshold(self):
 
-        number,ok = QtGui.QInputDialog.getInt(self.gui.win,"Adjust Saturation Threshold","Enter new minimal pixel number:",value=self.saturationthreshold)
+        number,ok = QtGui.QInputDialog.getInt(self.gui.win,"Adjust Saturation Threshold",\
+            "Enter new minimal pixel number:",value=self.saturationthreshold)
         
         if ok:
             self.saturationthreshold = number
+
+
+    def AdjustBufferSize(self):
+
+        number,ok = QtGui.QInputDialog.getInt(self.gui.win,"Adjust Size of Data Buffer",\
+            "Enter new length of data buffer (number of saved values):",value=self.databuffersize)
+
+        if ok:
+            oldbuffersize = self.databuffersize
+            self.databuffersize = number
+            newdatabuffer = self.CreateDataBuffer()
+            if self.databuffersize < oldbuffersize:
+                newdatabuffer[1:,] = self.databuffer[1:,-self.databuffersize:]
+            elif self.databuffersize == oldbuffersize:
+                newdatabuffer[1:,] = self.databuffer[1:,]
+            elif self.databuffersize > oldbuffersize:
+                newdatabuffer[1:,-oldbuffersize:] = self.databuffer[1:,]
+            self.databuffer = newdatabuffer
 
 
 
@@ -704,12 +759,15 @@ class App_Launcher(object):
         totalcamnumber = 0
         camfound = False
 
+        self.cameratypeobj = []
+        self.cameratotallist = []
+
 
         for i in range(len(self.cameratypemenu)):
             cameratypeobjtemp = cameramodules[i].CameraTypeSpecific_API()
             self.cameratypeobj.append(cameratypeobjtemp)
 
-            print self.cameratypeobj
+            # print self.cameratypeobj
 
         for obj in self.cameratypeobj:
             tempcamlist = obj.CreateCameraList()
@@ -736,18 +794,35 @@ class App_Launcher(object):
 
         # self.cameratotallist = map(cameratypeobj[i].CreateCameraList,cameratypeobj)
 
-        print self.cameratotallist, "Total Camera List"
+        # print self.cameratotallist, "Total Camera List"
 
         self.RealData = True
 
         if totalcamnumber != 0:
+            camtypeindex = cameratypes.index(self.activecamtype)
+            if self.activecamserial in self.cameratotallist[camtypeindex]:
+                self.camera = self.cameratypeobj[camtypeindex]
+                self.camera.StartCamera(camindex=self.cameratotallist[camtypeindex].index(self.activecamserial))
+                self.activecamtype = self.activecamtype
+                self.activecamserial = self.activecamserial
+                self.InitializeCam()
+                camfound = True
+
             for i in range(len(cameratypes)):
                 if not camfound:
                     if len(self.cameratotallist[i]) != 0:
                         self.camera = self.cameratypeobj[i]
                         self.camera.StartCamera(camindex=0)
+                        self.activecamtype = cameratypes[i]
+                        self.activecamserial = self.cameratotallist[i][0]
                         self.InitializeCam()
                         camfound = True
+
+                for j in range(len(self.cameratotallist[i])):
+                    name = self.cameratotallist[i][j]
+                    changeaction = self.cameratypemenu[i].addAction(name)
+                    self.gui.mainwin.connect(changeaction,QtCore.SIGNAL('triggered()'), lambda i=i: self.ChangeCamera(camindex=i))
+                    self.cameratypemenu[i].addAction(changeaction)
 
 
         # if self.cameratypemenu[0].isVisible():
@@ -795,11 +870,13 @@ class App_Launcher(object):
             self.viewtimer.start()
         if not camfound:
             self.camera = None
+            self.activecamtype = None
+            self.activecamserial = None
             self.MessageNoCamFound()
             
             # print 'ERROR -- No cameras found!!'
 
-        print "Camera", self.camera
+        # print "Camera", self.camera
 
 
     def RefreshCameras(self):
@@ -813,12 +890,13 @@ class App_Launcher(object):
             if self.RealData:
                 self.camera.StopCamera()
 
-            for i in self.VRmMenu.actions():
-                self.VRmMenu.removeAction(i)
+            for i in range(len(cameratypes)):
+                for j in self.cameratypemenu[i].actions():
+                    self.cameratypemenu[i].removeAction(j)
 
         
         self.SearchCameras()
-        self.InitializeCam()
+        # self.InitializeCam()
 
 
 
@@ -874,9 +952,8 @@ class App_Launcher(object):
         the databuffer is returned.
         '''
 
-        buffersize = 40000 # Change this number for showing a longer period in time evolution plots
-        databuffer = np.zeros([7,buffersize])
-        bufferrange = np.arange(buffersize)
+        databuffer = np.zeros([7,self.databuffersize])
+        bufferrange = np.arange(self.databuffersize)
         databuffer[0,:] = bufferrange
 
         return databuffer
