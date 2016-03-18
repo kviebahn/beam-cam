@@ -215,12 +215,12 @@ class Ui_Form(object):
         self.maxbeforeRadio = QtGui.QRadioButton(Form)
         # if self.fitline.isChecked():
         #     self.maxbeforeRadio.setChecked(True)
-        self.maxbeforeRadio.setChecked(True)
+        # self.maxbeforeRadio.setChecked(True)
         self.maxbeforeRadio.setObjectName(_fromUtf8("maxbeforeRadio"))
         self.gridLayout.addWidget(self.maxbeforeRadio, 5, 4, 1, 1)
 
         self.absmaxRadio = QtGui.QRadioButton(Form)
-        # self.absmaxRadio.setChecked(True)
+        self.absmaxRadio.setChecked(True)
         self.absmaxRadio.setObjectName(_fromUtf8("absmaxRadio"))
         self.gridLayout.addWidget(self.absmaxRadio, 6, 4, 1, 1)
         # self.absmaxRadio.setCheckable(False)

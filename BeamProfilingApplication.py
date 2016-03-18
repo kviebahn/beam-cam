@@ -187,6 +187,18 @@ class Ui_Window(object):
         self.view.addItem(self.vLine, ignoreBounds=True)
         self.view.addItem(self.hLine, ignoreBounds=True)
 
+        self.vLinecut,self.hLinecut = self.CreateCrossHairCut()
+        self.view.addItem(self.vLinecut, ignoreBounds=True)
+        self.view.addItem(self.hLinecut, ignoreBounds=True)
+        self.vLinecut.hide()
+        self.hLinecut.hide()
+        self.ui.maxbeforeRadio.setChecked(False)
+        self.ui.absmaxRadio.setChecked(False)
+        self.ui.selfmaxRadio.setChecked(False)
+        self.ui.maxbeforeRadio.setCheckable(False)
+        self.ui.absmaxRadio.setCheckable(False)
+        self.ui.selfmaxRadio.setCheckable(False)
+
 
         self.p3 = self.CreateSumHorizontalPlot()
         self.amphist = self.CreateAmplitudeHist()
@@ -345,6 +357,16 @@ class Ui_Window(object):
         hLine = pg.InfiniteLine(angle=0, movable=False)
 
         return vLine,hLine
+
+    def CreateCrossHairCut(self):
+        '''
+        Creates cross hair to mark cutted lines and returns tuple of (vlinecut,hlinecut)
+        '''
+
+        vLinecut = pg.InfiniteLine(angle=90, movable=False, pen='b')
+        hLinecut = pg.InfiniteLine(angle=0, movable=False, pen='b')
+
+        return vLinecut,hLinecut
 
     def CreateSumHorizontalPlot(self):
         '''
@@ -910,7 +932,7 @@ class App_Launcher(object):
         self.camera = "Simulation in use"
         self.simulation = Sim.GaussBeamSimulation()
         self.simulation.CreateImages()
-        self.viewtimer.start(0)
+        self.viewtimer.start(2000)
 
 
 
@@ -976,6 +998,37 @@ class App_Launcher(object):
 
         else:
             pass
+
+
+    def InitializeSumFit(self):
+        self.gui.ui.maxbeforeRadio.setChecked(False)
+        self.gui.ui.absmaxRadio.setChecked(False)
+        self.gui.ui.selfmaxRadio.setChecked(False)
+        self.gui.ui.maxbeforeRadio.setCheckable(False)
+        self.gui.ui.absmaxRadio.setCheckable(False)
+        self.gui.ui.selfmaxRadio.setCheckable(False)
+        self.gui.vLinecut.hide()
+        self.gui.hLinecut.hide()
+
+
+    def InitializeLineFit(self):
+        self.gui.ui.maxbeforeRadio.setCheckable(True)
+        self.gui.ui.absmaxRadio.setCheckable(True)
+        self.gui.ui.selfmaxRadio.setCheckable(True)
+        self.gui.ui.maxbeforeRadio.setChecked(False)
+        self.gui.ui.absmaxRadio.setChecked(True)
+        self.gui.ui.selfmaxRadio.setChecked(False)
+        self.gui.vLinecut.show()
+        self.gui.hLinecut.show()
+
+    def InitializeSelfLineFit(self):
+        self.gui.vLinecut.setMovable(True)
+        self.gui.hLinecut.setMovable(True)
+
+
+    def InitializeAutoLineFit(self):
+        self.gui.vLinecut.setMovable(False)
+        self.gui.hLinecut.setMovable(False)
 
 
 
@@ -1153,7 +1206,36 @@ class App_Launcher(object):
 
 
         # Plot sum in horizontal direction and fit gaussian
-        datahor = selected.sum(axis=1)
+        if self.gui.ui.fitsum.isChecked():
+            datahor = selected.sum(axis=1)
+            datavert = selected.sum(axis=0)
+            # self.gui.ui.maxbeforeRadio.isCheckable(False)
+            # self.gui.ui.absmaxRadio.isCheckable(False)
+            # self.gui.ui.selfmaxRadio.isCheckable(False)
+        elif self.gui.ui.fitline.isChecked():
+            if self.gui.ui.maxbeforeRadio.isChecked():
+                posroi = self.gui.roi.pos()
+                datavertindex = round(self.databuffer[3,-1]) - posroi[0]
+                datahorindex = round(self.databuffer[4,-1]) - posroi[1]
+                datahor = selected[:,datahorindex]
+                datavert = selected[datavertindex,:]
+                self.gui.hLinecut.setPos(self.databuffer[4,-1])
+                self.gui.vLinecut.setPos(self.databuffer[3,-1])
+            elif self.gui.ui.absmaxRadio.isChecked():
+                posroi = self.gui.roi.pos()
+                maxindex = np.unravel_index(selected.argmax(), selected.shape)
+                datahor = selected[:,maxindex[1]]
+                datavert = selected[maxindex[0],:]
+                self.gui.hLinecut.setPos(maxindex[1]+posroi[1])
+                self.gui.vLinecut.setPos(maxindex[0]+posroi[0])
+            elif self.gui.ui.selfmaxRadio.isChecked():
+                posroi = self.gui.roi.pos()
+                sizeroi = self.gui.roi.size()
+                self.gui.vLinecut.setBounds((posroi[0],posroi[0]+sizeroi[0]-1))
+                self.gui.hLinecut.setBounds((posroi[1],posroi[1]+sizeroi[1]-1))
+                datahor = selected[:,int(self.gui.hLinecut.value()-posroi[1])]
+                datavert = selected[int(self.gui.vLinecut.value()-posroi[0]),:]
+
         self.gui.p2.plot(xhor,datahor, clear=True)
         FittedParamsHor = MatTools.FitGaussian(datahor,xhor)[0]
         # xhor = np.arange(datahor.size)
@@ -1167,7 +1249,7 @@ class App_Launcher(object):
         self.gui.amphist.plot(xamp, yamp, stepMode=True, clear=True, fillLevel=0, brush=(0,0,255,150))
 
         # Plot sum in vertical direction and fit gaussian, save fit results in buffer and show in text box
-        datavert = selected.sum(axis=0)
+        
         self.gui.p3.plot(xvert,datavert, clear=True).rotate(90)
         FittedParamsVert = MatTools.FitGaussian(datavert,xvert)[0]
         # xvert = np.arange(datavert.size)
@@ -1427,6 +1509,16 @@ class App_Launcher(object):
 
         # When the 'Connect ROI' button is pressed, 'saveroisize' is called
         self.gui.ui.connect.toggled.connect(self.saveroisize)
+
+        self.gui.ui.fitsum.clicked.connect(self.InitializeSumFit)
+
+        self.gui.ui.fitline.clicked.connect(self.InitializeLineFit)
+
+        self.gui.ui.maxbeforeRadio.clicked.connect(self.InitializeAutoLineFit)
+
+        self.gui.ui.absmaxRadio.clicked.connect(self.InitializeAutoLineFit)
+
+        self.gui.ui.selfmaxRadio.clicked.connect(self.InitializeSelfLineFit)
     
         # When the ROI region has been changed, 'updateRoi' is called
         self.gui.roi.sigRegionChangeFinished.connect(self.updateRoi)
