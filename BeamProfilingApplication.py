@@ -86,11 +86,14 @@ from pyqtgraph.Qt import QtCore, QtGui
 import numpy as np
 import pyqtgraph as pg
 import pyqtgraph.ptime as ptime
+import pyqtgraph.exporters
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import sys
 import time
 import os
+from PIL import Image
+# from scipy.misc import toimage
 
 from ImageViewerTemplate import Ui_Form
 # reload(ImageViewerTemplate)
@@ -148,7 +151,7 @@ class Ui_Window(object):
         self.mainwin = QtGui.QMainWindow()
 
         self.menubar = QtGui.QMenuBar(self.mainwin)
-        self.cameramenu, self.settingsmenu, self.viewmenu = self.CreateMenuBar()
+        self.filemenu, self.cameramenu, self.settingsmenu, self.viewmenu = self.CreateMenuBar()
 
         self.win = QtGui.QWidget()
 
@@ -239,6 +242,7 @@ class Ui_Window(object):
         exitAction = QtGui.QAction('Exit', self.mainwin)        
         exitAction.triggered.connect(QtGui.qApp.quit)
         fileMenu.addAction(exitAction)
+        fileMenu.addSeparator()
 
         cameraMenu = self.menubar.addMenu('&Camera')
         settingsMenu = self.menubar.addMenu('&Settings')
@@ -257,7 +261,7 @@ class Ui_Window(object):
 
         self.mainwin.setMenuBar(self.menubar)
 
-        return cameraMenu, settingsMenu, viewMenu
+        return fileMenu, cameraMenu, settingsMenu, viewMenu
 
 
     def SetRangeViewbox(self):
@@ -507,6 +511,7 @@ class App_Launcher(object):
 
 
         self.gui = Ui_Window()
+        self.InitializeSaveOptions()
         self.cameratypemenu = self.InitializeCamSearch()
         self.InitializeSettings()
         self.InitializeView()
@@ -680,6 +685,38 @@ class App_Launcher(object):
         return cameratypemenu
 
 
+    def InitializeSaveOptions(self):
+
+        saveImageAction = QtGui.QAction('Save Image', self.gui.filemenu)
+        self.gui.filemenu.addAction(saveImageAction)
+        self.gui.mainwin.connect(saveImageAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImage())
+
+    def SaveImage(self,name=None):
+
+        # color = np.array([[0,0,0,255],[255,128,0,255],[255,255,0,255]],dtype=np.ubyte)
+        # color = cm.hot
+        # img =toimage(self.imagearray,pal=color,mode='P')
+        # img =toimage(self.imagearray,mode='L')
+
+        if name == None:
+            # t = time.mktime(t)
+            name = time.strftime("%b-%d-%Y_%H-%M-%S",time.localtime())
+            name = "Image" + name
+
+        imgraw = np.uint8(cm.spectral(self.imagearray/255.)*255)
+
+        img = Image.fromarray(imgraw)
+        img = img.transpose(Image.FLIP_TOP_BOTTOM)
+        img.save(name + '.png')
+
+
+        # exporter = pg.exporters.ImageExporter(self.gui.img)
+        # exporter.export('test.png')
+
+        # self.gui.view.export('test.png')
+
+
+
     def InitializeSettings(self):
 
         saturationMenu = self.gui.settingsmenu.addMenu('Saturation')
@@ -712,6 +749,8 @@ class App_Launcher(object):
 
 
         self.gui.mainwin.connect(scalingAction,QtCore.SIGNAL('triggered()'), lambda: self.AdjustScaling())
+
+
 
 
     def AdjustScaling(self):
@@ -752,7 +791,7 @@ class App_Launcher(object):
     def AdjustBufferSize(self):
 
         number,ok = QtGui.QInputDialog.getInt(self.gui.win,"Adjust Size of Data Buffer",\
-            "Enter new length of data buffer (number of saved values):",value=self.databuffersize)
+            "Enter new length of data buffer (number of saved values):",value=self.databuffersize,min=10,max=10000000)
 
         if ok:
             oldbuffersize = self.databuffersize
@@ -932,7 +971,7 @@ class App_Launcher(object):
         self.camera = "Simulation in use"
         self.simulation = Sim.GaussBeamSimulation()
         self.simulation.CreateImages()
-        self.viewtimer.start(2000)
+        self.viewtimer.start()
 
 
 
@@ -1029,6 +1068,22 @@ class App_Launcher(object):
     def InitializeAutoLineFit(self):
         self.gui.vLinecut.setMovable(False)
         self.gui.hLinecut.setMovable(False)
+
+
+    def CheckSaturationData(self,xdata,ydata):
+        if self.RealData:
+            indices = np.argwhere(ydata>=self.saturationvalue)
+            xdatanew = np.delete(xdata,indices)
+            ydatanew = np.delete(ydata,indices)
+            
+            # Exception when new arrays contain not enough data!!
+            if len(xdatanew) <= 5:
+                xdatanew = np.zeros(10)
+                ydatanew = np.zeros(10)
+            return xdatanew, ydatanew
+        else:
+            return xdata, ydata
+
 
 
 
@@ -1219,6 +1274,10 @@ class App_Launcher(object):
                 datahorindex = round(self.databuffer[4,-1]) - posroi[1]
                 datahor = selected[:,datahorindex]
                 datavert = selected[datavertindex,:]
+
+                xhor,datahor = self.CheckSaturationData(xhor,datahor)
+                xvert,datavert = self.CheckSaturationData(xvert,datavert)
+
                 self.gui.hLinecut.setPos(self.databuffer[4,-1])
                 self.gui.vLinecut.setPos(self.databuffer[3,-1])
             elif self.gui.ui.absmaxRadio.isChecked():
@@ -1226,6 +1285,10 @@ class App_Launcher(object):
                 maxindex = np.unravel_index(selected.argmax(), selected.shape)
                 datahor = selected[:,maxindex[1]]
                 datavert = selected[maxindex[0],:]
+
+                xhor,datahor = self.CheckSaturationData(xhor,datahor)
+                xvert,datavert = self.CheckSaturationData(xvert,datavert)
+
                 self.gui.hLinecut.setPos(maxindex[1]+posroi[1])
                 self.gui.vLinecut.setPos(maxindex[0]+posroi[0])
             elif self.gui.ui.selfmaxRadio.isChecked():
@@ -1235,6 +1298,9 @@ class App_Launcher(object):
                 self.gui.hLinecut.setBounds((posroi[1],posroi[1]+sizeroi[1]-1))
                 datahor = selected[:,int(self.gui.hLinecut.value()-posroi[1])]
                 datavert = selected[int(self.gui.vLinecut.value()-posroi[0]),:]
+
+                xhor,datahor = self.CheckSaturationData(xhor,datahor)
+                xvert,datavert = self.CheckSaturationData(xvert,datavert)
 
         self.gui.p2.plot(xhor,datahor, clear=True)
         FittedParamsHor = MatTools.FitGaussian(datahor,xhor)[0]
