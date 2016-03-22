@@ -95,6 +95,10 @@ import os
 from PIL import Image
 # from scipy.misc import toimage
 
+from tempfile import NamedTemporaryFile
+import shutil
+import csv
+
 from ImageViewerTemplate import Ui_Form
 # reload(ImageViewerTemplate)
 
@@ -530,6 +534,7 @@ class App_Launcher(object):
         self.origroisize = None
         self.simulation = None
 
+        self.starttimefile = time.localtime()
 
         # Start timer for the loop
         self.viewtimer = QtCore.QTimer()
@@ -691,6 +696,32 @@ class App_Launcher(object):
         self.gui.filemenu.addAction(saveImageAction)
         self.gui.mainwin.connect(saveImageAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImage())
 
+        saveImageAsAction = QtGui.QAction('Save Image as', self.gui.filemenu)
+        self.gui.filemenu.addAction(saveImageAsAction)
+        self.gui.mainwin.connect(saveImageAsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImageAs())
+
+        saveDataBufferAction = QtGui.QAction('Save Data Buffer', self.gui.filemenu)
+        self.gui.filemenu.addAction(saveDataBufferAction)
+        self.gui.mainwin.connect(saveDataBufferAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveDataBuffer())
+
+        saveActualBeamPropsAction = QtGui.QAction('Save Actual Beam Properties', self.gui.filemenu)
+        self.gui.filemenu.addAction(saveActualBeamPropsAction)
+        self.gui.mainwin.connect(saveActualBeamPropsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveDataSimple())
+
+
+    def EnterFileName(self):
+
+        name,ok = QtGui.QInputDialog.getText(self.gui.win,"Save as ...",\
+            "Enter name for data to be saved:")
+
+        if ok:
+            return ok, name
+        else:
+            return ok, None
+
+
+
+
     def SaveImage(self,name=None):
 
         # color = np.array([[0,0,0,255],[255,128,0,255],[255,255,0,255]],dtype=np.ubyte)
@@ -698,12 +729,21 @@ class App_Launcher(object):
         # img =toimage(self.imagearray,pal=color,mode='P')
         # img =toimage(self.imagearray,mode='L')
 
+        # print name, 'Name'
+
         if name == None:
             # t = time.mktime(t)
             name = time.strftime("%b-%d-%Y_%H-%M-%S",time.localtime())
             name = "Image" + name
+        else:
+            name = str(name)
 
-        imgraw = np.uint8(cm.spectral(self.imagearray/255.)*255)
+        # Change colormap here (any matplotlib colormap possible)
+        if self.RealData:
+            imgraw = np.uint8(cm.jet(self.imagearray*1./self.saturationvalue)*self.saturationvalue)
+        if not self.RealData:
+            imgraw = np.uint8(cm.jet(self.imagearray*1./255.)*255)
+
 
         img = Image.fromarray(imgraw)
         img = img.transpose(Image.FLIP_TOP_BOTTOM)
@@ -714,6 +754,56 @@ class App_Launcher(object):
         # exporter.export('test.png')
 
         # self.gui.view.export('test.png')
+
+    def SaveImageAs(self):
+        
+        ok,name = self.EnterFileName()
+        if ok:
+            self.SaveImage(name=name)
+
+
+
+    def SaveDataBuffer(self,name=None):
+
+        if name == None:
+            name = time.strftime("%b-%d-%Y_%H-%M-%S",time.localtime())
+            name = "DataBuffer-" + name
+        else:
+            name = str(name)
+
+        np.savetxt(name + '.csv',self.databuffer.T,fmt='%.7e',header='Index, Timestamp, Amplitude, Horizontal Position, Vertical Position, Horizontal Waist, Vertical Waist, Distance to Rererence Beam')
+
+    def SaveDataBufferAs(self):
+        ok,name = self.EnterFileName()
+        if ok:
+            self.SaveDataBufferAs(name=name)
+
+    def SaveDataSimple(self):
+
+        name = "BeamData-" + time.strftime("%b-%d-%Y_%H-%M-%S",self.starttimefile)
+
+        if not os.path.isfile(name + '.csv'):
+
+            datatowrite = self.databuffer[:,-1]
+            datatowrite[0] = 1.0
+            # print datatowrite, "Written data"
+            np.savetxt(name + '.csv',datatowrite[None],fmt='%.7e',header='Index, Timestamp, Amplitude, Horizontal Position, Vertical Position, Horizontal Waist, Vertical Waist, Distance to Rererence Beam')
+
+        else:
+            tempfile = NamedTemporaryFile(delete=False)
+
+            olddata = np.genfromtxt(name + '.csv',delimiter=' ',dtype=float)
+            datatoadd = self.databuffer[:,-1]
+            newdata = np.vstack((olddata,datatoadd))
+            newdata[-1,0] = newdata[-2,0] + 1
+            # print newdata, 'Newdata'
+
+            np.savetxt(tempfile.name + '.csv',newdata,header='Index, Timestamp, Amplitude, Horizontal Position, Vertical Position, Horizontal Waist, Vertical Waist, Distance to Rererence Beam')
+
+            shutil.move(tempfile.name + '.csv', name + '.csv')
+
+
+
 
 
 
