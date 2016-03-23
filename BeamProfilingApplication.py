@@ -717,13 +717,25 @@ class App_Launcher(object):
         self.gui.filemenu.addAction(saveImageAction)
         self.gui.mainwin.connect(saveImageAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImage())
 
-        saveImageAsAction = QtGui.QAction('Save Image as', self.gui.filemenu)
+        saveImageAsAction = QtGui.QAction('Save Image as..', self.gui.filemenu)
         self.gui.filemenu.addAction(saveImageAsAction)
         self.gui.mainwin.connect(saveImageAsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImageAs())
+
+        saveWidgetAction = QtGui.QAction('Save Image Widget', self.gui.filemenu)
+        self.gui.filemenu.addAction(saveWidgetAction)
+        self.gui.mainwin.connect(saveWidgetAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImageWidget())
+
+        saveWidgetAsAction = QtGui.QAction('Save Image Widget as..', self.gui.filemenu)
+        self.gui.filemenu.addAction(saveWidgetAsAction)
+        self.gui.mainwin.connect(saveWidgetAsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImageWidgetAs())
 
         saveDataBufferAction = QtGui.QAction('Save Data Buffer', self.gui.filemenu)
         self.gui.filemenu.addAction(saveDataBufferAction)
         self.gui.mainwin.connect(saveDataBufferAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveDataBuffer())
+
+        saveDataBufferAsAction = QtGui.QAction('Save Data Buffer as..', self.gui.filemenu)
+        self.gui.filemenu.addAction(saveDataBufferAsAction)
+        self.gui.mainwin.connect(saveDataBufferAsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveDataBufferAs())
 
         saveActualBeamPropsAction = QtGui.QAction('Save Actual Beam Properties', self.gui.filemenu)
         self.gui.filemenu.addAction(saveActualBeamPropsAction)
@@ -812,6 +824,23 @@ class App_Launcher(object):
         ok,name = self.EnterFileName()
         if ok:
             self.SaveImage(name=name)
+
+    def SaveImageWidget(self,name=None):
+
+        if name == None:
+            name = time.strftime("%b-%d-%Y_%H-%M-%S",time.localtime())
+            name = "Widget" + name
+        else:
+            name = str(name)
+
+        pic = QtGui.QPixmap.grabWidget(self.gui.ui.plot)
+        pic.save(os.path.join(self.path,name + '.png'))
+
+    def SaveImageWidgetAs(self):
+
+        ok,name = self.EnterFileName()
+        if ok:
+            self.SaveImageWidget(name=name)
 
 
 
