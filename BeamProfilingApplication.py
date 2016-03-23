@@ -544,6 +544,11 @@ class App_Launcher(object):
 
         # Start timer for the loop
         self.viewtimer = QtCore.QTimer()
+
+        self.session = 1
+        self.distancesession = 1
+        self.autosavesession = 1
+
         self.autosavetimer = QtCore.QTimer()
         self.autosaveAction
         #???
@@ -734,6 +739,16 @@ class App_Launcher(object):
         # autosaveAction.triggered.connect(self.AutosavePressAction(autosaveAction.isChecked()))
         self.gui.mainwin.connect(self.autosaveAction,QtCore.SIGNAL('triggered()'), lambda: self.AutosavePressAction())
 
+        self.gui.filemenu.addSeparator()
+
+        newSessionAction = QtGui.QAction('New Session', self.gui.filemenu)
+        self.gui.filemenu.addAction(newSessionAction)
+        self.gui.mainwin.connect(newSessionAction,QtCore.SIGNAL('triggered()'), lambda: self.NewDataAcquisitionSession())
+
+        newDistSessionAction = QtGui.QAction('New Distance Session', self.gui.filemenu)
+        self.gui.filemenu.addAction(newDistSessionAction)
+        self.gui.mainwin.connect(newDistSessionAction,QtCore.SIGNAL('triggered()'), lambda: self.NewDistanceSession())
+
 
     def SetPath(self):
 
@@ -743,7 +758,7 @@ class App_Launcher(object):
         if os.path.isdir(pathtemp):
             self.path = pathtemp
 
-        print "Path", self.path
+        # print "Path", self.path
 
 
     def EnterFileName(self):
@@ -817,9 +832,9 @@ class App_Launcher(object):
 
     def SaveDataSimple(self):
 
-        name = "BeamData-" + time.strftime("%b-%d-%Y_%H-%M-%S",self.starttimefile)
+        name = "BeamData-" + str(self.session) + "-" + time.strftime("%b-%d-%Y_%H-%M-%S",self.starttimefile)
 
-        if not os.path.isfile(name + '.csv'):
+        if not os.path.isfile(os.path.join(self.path,name + '.csv')):
 
             datatowrite = np.copy(self.databuffer[:,-1])
             datatowrite[0] = 1.0
@@ -829,7 +844,7 @@ class App_Launcher(object):
         else:
             tempfile = NamedTemporaryFile(delete=False)
 
-            olddata = np.genfromtxt(name + '.csv',delimiter=' ',dtype=float)
+            olddata = np.genfromtxt(os.path.join(self.path,name + '.csv'),delimiter=' ',dtype=float)
             datatoadd = np.copy(self.databuffer[:,-1])
             newdata = np.vstack((olddata,datatoadd))
             newdata[-1,0] = newdata[-2,0] + 1
@@ -846,9 +861,9 @@ class App_Launcher(object):
             "Enter a distance stamp:",decimals=4)
 
         if ok:
-            name = "BeamDataDist-" + time.strftime("%b-%d-%Y_%H-%M-%S",self.starttimefile)
+            name = "BeamDataDist-" + str(self.distancesession) + "-" + time.strftime("%b-%d-%Y_%H-%M-%S",self.starttimefile)
 
-            if not os.path.isfile(name + '.csv'):
+            if not os.path.isfile(os.path.join(self.path,name + '.csv')):
 
                 datatowrite = np.copy(self.databuffer[:,-1])
                 datatowrite[0] = 1.0
@@ -859,7 +874,7 @@ class App_Launcher(object):
             else:
                 tempfile = NamedTemporaryFile(delete=False)
 
-                olddata = np.genfromtxt(name + '.csv',delimiter=' ',dtype=float)
+                olddata = np.genfromtxt(os.path.join(self.path,name + '.csv'),delimiter=' ',dtype=float)
                 datatoadd = np.copy(self.databuffer[:,-1])
                 datatoadd = np.append(number,datatoadd)
                 newdata = np.vstack((olddata,datatoadd))
@@ -879,7 +894,7 @@ class App_Launcher(object):
     def StartAutosave(self):
 
         number,ok = QtGui.QInputDialog.getDouble(self.gui.win,"Start Autosave",\
-            "Enter a time interval (in seconds):",decimals=3)
+            "Enter a time interval (in seconds):",decimals=3,min=0.001,value=1.000)
 
         if ok:
             self.autosavetimer.timeout.connect(self.AutosaveBeamProps)
@@ -894,6 +909,7 @@ class App_Launcher(object):
         if self.autosavetimer.isActive():
         # if True:
             self.autosavetimer.stop()
+            self.autosavesession += 1
         
 
 
@@ -902,9 +918,9 @@ class App_Launcher(object):
 
         timeinterval = self.autosavetimer.interval()/1000.
 
-        name = "AutosaveBeamProps-" + time.strftime("%b-%d-%Y_%H-%M-%S",self.starttimefile)
+        name = "AutosaveBeamProps-" + str(self.autosavesession) + "-" + time.strftime("%b-%d-%Y_%H-%M-%S",self.starttimefile)
 
-        if not os.path.isfile(name + '.csv'):
+        if not os.path.isfile(os.path.join(self.path,name + '.csv')):
 
             datatowrite = np.copy(self.databuffer[:,-1])
             # print self.databuffer[:,-1], "Databuffer Time 1"
@@ -917,7 +933,7 @@ class App_Launcher(object):
         else:
             tempfile = NamedTemporaryFile(delete=False)
 
-            olddata = np.genfromtxt(name + '.csv',delimiter=' ',dtype=float)
+            olddata = np.genfromtxt(os.path.join(self.path,name + '.csv'),delimiter=' ',dtype=float)
             datatoadd = np.copy(self.databuffer[:,-1])
             newdata = np.vstack((olddata,datatoadd))
             newdata[-1,0] = newdata[-2,0] + 1
@@ -928,6 +944,13 @@ class App_Launcher(object):
 
             shutil.move(tempfile.name + '.csv', os.path.join(self.path,name + '.csv'))
 
+    def NewDataAcquisitionSession(self):
+
+        self.session += 1
+
+    def NewDistanceSession(self):
+
+        self.distancesession += 1
 
 
 
@@ -1818,6 +1841,8 @@ class App_Launcher(object):
 
         # When the 'Rotate clockwise' button is clicked, call 'updaterotanglecw'
         # self.gui.ui.rotcw.clicked.connect(self.updaterotanglecw)
+
+        self.gui.ui.saveprops.clicked.connect(self.SaveDataSimple)
 
         self.gui.ui.autoscale.clicked.connect(self.autoadjustroi)
 

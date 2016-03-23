@@ -181,6 +181,13 @@ class Ui_Form(object):
         self.gridLayout.addWidget(self.gainlabel, 7, 3, 1, 1)
 
 
+        '''Defines the 'Save actual beam properties' push button'''
+        self.saveprops =  QtGui.QPushButton('Save Actual Beam Properties')
+        self.saveprops.setObjectName(_fromUtf8("saveprops"))
+        self.gridLayout.addWidget(self.saveprops, 3, 3, 2, 1)
+        self.saveprops.setToolTip('Save the actual beam properties into the corresponding .csv-file')
+
+
 
         '''Defines the heading for the 'fit options' column'''
         self.fitoptionslabel = QtGui.QLabel(Form)
