@@ -30,6 +30,9 @@ Please see the README.md file for a copy of the GNU General Public License, or o
 cameratypes = ['VRmagic USB','Ximea xiQ']
 cameraapinames = ['VRmagicUsbCamAPI','XimeaxiQCamAPI']
 
+# cameratypes = []
+# cameraapinames = []
+
 
 
 # import os
@@ -523,7 +526,10 @@ class App_Launcher(object):
         self.cameratypeobj = []
         self.cameratotallist = []
         self.camera = None
-        self.activecamtype = cameratypes[0]
+        if len(cameratypes) > 0:
+            self.activecamtype = cameratypes[0]
+        else:
+            self.activecamtype = None
         self.activecamserial = None
 
         self.imagearray = None
