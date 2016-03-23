@@ -538,6 +538,8 @@ class App_Launcher(object):
 
         # Start timer for the loop
         self.viewtimer = QtCore.QTimer()
+        self.autosavetimer = QtCore.QTimer()
+        self.autosaveAction
         #???
         # self.VRmCam = None
 
@@ -548,6 +550,8 @@ class App_Launcher(object):
         self.saturationthreshold = 5
 
         self.muperpxl = None
+
+        self.path = os.getcwd()
 
         self.SearchCameras()
 
@@ -692,6 +696,12 @@ class App_Launcher(object):
 
     def InitializeSaveOptions(self):
 
+        setPathAction = QtGui.QAction('Change Directory', self.gui.filemenu)
+        self.gui.filemenu.addAction(setPathAction)
+        self.gui.mainwin.connect(setPathAction,QtCore.SIGNAL('triggered()'), lambda: self.SetPath())
+
+        self.gui.filemenu.addSeparator()
+
         saveImageAction = QtGui.QAction('Save Image', self.gui.filemenu)
         self.gui.filemenu.addAction(saveImageAction)
         self.gui.mainwin.connect(saveImageAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImage())
@@ -707,6 +717,27 @@ class App_Launcher(object):
         saveActualBeamPropsAction = QtGui.QAction('Save Actual Beam Properties', self.gui.filemenu)
         self.gui.filemenu.addAction(saveActualBeamPropsAction)
         self.gui.mainwin.connect(saveActualBeamPropsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveDataSimple())
+
+        saveActualDataDistAction = QtGui.QAction('Save Data with Distance Stamp', self.gui.filemenu)
+        self.gui.filemenu.addAction(saveActualDataDistAction)
+        self.gui.mainwin.connect(saveActualDataDistAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveDataDistanceStamp())
+
+        self.autosaveAction = QtGui.QAction('Autosave', self.gui.filemenu)
+        self.gui.filemenu.addAction(self.autosaveAction)
+        self.autosaveAction.setCheckable(True)
+        # autosaveAction.triggered.connect(self.AutosavePressAction(autosaveAction.isChecked()))
+        self.gui.mainwin.connect(self.autosaveAction,QtCore.SIGNAL('triggered()'), lambda: self.AutosavePressAction())
+
+
+    def SetPath(self):
+
+        dialog = QtGui.QFileDialog()
+        pathtemp = str(QtGui.QFileDialog.getExistingDirectory(dialog, "Select Directory"))
+
+        if os.path.isdir(pathtemp):
+            self.path = pathtemp
+
+        print "Path", self.path
 
 
     def EnterFileName(self):
@@ -747,7 +778,7 @@ class App_Launcher(object):
 
         img = Image.fromarray(imgraw)
         img = img.transpose(Image.FLIP_TOP_BOTTOM)
-        img.save(name + '.png')
+        img.save(os.path.join(self.path,name + '.png'))
 
 
         # exporter = pg.exporters.ImageExporter(self.gui.img)
@@ -771,7 +802,7 @@ class App_Launcher(object):
         else:
             name = str(name)
 
-        np.savetxt(name + '.csv',self.databuffer.T,fmt='%.7e',header='Index, Timestamp, Amplitude, Horizontal Position, Vertical Position, Horizontal Waist, Vertical Waist, Distance to Rererence Beam')
+        np.savetxt(os.path.join(self.path,name + '.csv'),self.databuffer.T,fmt='%.7e',header='Index, Timestamp, Amplitude, Horizontal Position, Vertical Position, Horizontal Waist, Vertical Waist, Distance to Rererence Beam')
 
     def SaveDataBufferAs(self):
         ok,name = self.EnterFileName()
@@ -784,23 +815,120 @@ class App_Launcher(object):
 
         if not os.path.isfile(name + '.csv'):
 
-            datatowrite = self.databuffer[:,-1]
+            datatowrite = np.copy(self.databuffer[:,-1])
             datatowrite[0] = 1.0
             # print datatowrite, "Written data"
-            np.savetxt(name + '.csv',datatowrite[None],fmt='%.7e',header='Index, Timestamp, Amplitude, Horizontal Position, Vertical Position, Horizontal Waist, Vertical Waist, Distance to Rererence Beam')
+            np.savetxt(os.path.join(self.path,name + '.csv'),datatowrite[None],fmt='%.7e',header='Index, Timestamp, Amplitude, Horizontal Position, Vertical Position, Horizontal Waist, Vertical Waist, Distance to Rererence Beam')
 
         else:
             tempfile = NamedTemporaryFile(delete=False)
 
             olddata = np.genfromtxt(name + '.csv',delimiter=' ',dtype=float)
-            datatoadd = self.databuffer[:,-1]
+            datatoadd = np.copy(self.databuffer[:,-1])
             newdata = np.vstack((olddata,datatoadd))
             newdata[-1,0] = newdata[-2,0] + 1
             # print newdata, 'Newdata'
 
             np.savetxt(tempfile.name + '.csv',newdata,header='Index, Timestamp, Amplitude, Horizontal Position, Vertical Position, Horizontal Waist, Vertical Waist, Distance to Rererence Beam')
 
-            shutil.move(tempfile.name + '.csv', name + '.csv')
+            shutil.move(tempfile.name + '.csv', os.path.join(self.path,name + '.csv'))
+
+
+    def SaveDataDistanceStamp(self):
+
+        number,ok = QtGui.QInputDialog.getDouble(self.gui.win,"Save Beam Properties with Distance Stamp",\
+            "Enter a distance stamp:",decimals=4)
+
+        if ok:
+            name = "BeamDataDist-" + time.strftime("%b-%d-%Y_%H-%M-%S",self.starttimefile)
+
+            if not os.path.isfile(name + '.csv'):
+
+                datatowrite = np.copy(self.databuffer[:,-1])
+                datatowrite[0] = 1.0
+                datatowrite = np.append(number,datatowrite)
+                # print datatowrite, "Written data"
+                np.savetxt(os.path.join(self.path,name + '.csv'),datatowrite[None],fmt='%.7e',header='Distance Stamp, Index, Timestamp, Amplitude, Horizontal Position, Vertical Position, Horizontal Waist, Vertical Waist, Distance to Rererence Beam')
+
+            else:
+                tempfile = NamedTemporaryFile(delete=False)
+
+                olddata = np.genfromtxt(name + '.csv',delimiter=' ',dtype=float)
+                datatoadd = np.copy(self.databuffer[:,-1])
+                datatoadd = np.append(number,datatoadd)
+                newdata = np.vstack((olddata,datatoadd))
+                newdata[-1,1] = newdata[-2,1] + 1
+                # print newdata, 'Newdata'
+
+                np.savetxt(tempfile.name + '.csv',newdata,header='Distance Stamp, Index, Timestamp, Amplitude, Horizontal Position, Vertical Position, Horizontal Waist, Vertical Waist, Distance to Rererence Beam')
+
+                shutil.move(tempfile.name + '.csv', os.path.join(self.path,name + '.csv'))
+
+    def AutosavePressAction(self):
+        if self.autosaveAction.isChecked():
+            self.StartAutosave()
+        else:
+            self.StopAutosave()
+
+    def StartAutosave(self):
+
+        number,ok = QtGui.QInputDialog.getDouble(self.gui.win,"Start Autosave",\
+            "Enter a time interval (in seconds):",decimals=3)
+
+        if ok:
+            self.autosavetimer.timeout.connect(self.AutosaveBeamProps)
+            self.autosavetimer.start(int(number*1000))
+            self.AutosaveBeamProps()
+        else:
+            self.autosaveAction.setChecked(False)
+        
+
+    def StopAutosave(self):
+
+        if self.autosavetimer.isActive():
+        # if True:
+            self.autosavetimer.stop()
+        
+
+
+
+    def AutosaveBeamProps(self):
+
+        timeinterval = self.autosavetimer.interval()/1000.
+
+        name = "AutosaveBeamProps-" + time.strftime("%b-%d-%Y_%H-%M-%S",self.starttimefile)
+
+        if not os.path.isfile(name + '.csv'):
+
+            datatowrite = np.copy(self.databuffer[:,-1])
+            # print self.databuffer[:,-1], "Databuffer Time 1"
+            datatowrite[0] = 0.0
+            datatowrite[1] = datatowrite[0]*timeinterval
+            # print self.databuffer[:,-1], "Databuffer Time 2"
+            # print datatowrite, "Written data"
+            np.savetxt(os.path.join(self.path,name + '.csv'),datatowrite[None],fmt='%.7e',header='Index, Timestamp(s), Amplitude, Horizontal Position, Vertical Position, Horizontal Waist, Vertical Waist, Distance to Rererence Beam')
+
+        else:
+            tempfile = NamedTemporaryFile(delete=False)
+
+            olddata = np.genfromtxt(name + '.csv',delimiter=' ',dtype=float)
+            datatoadd = np.copy(self.databuffer[:,-1])
+            newdata = np.vstack((olddata,datatoadd))
+            newdata[-1,0] = newdata[-2,0] + 1
+            newdata[-1,1] = newdata[-1,0]*timeinterval
+            # print newdata, 'Newdata'
+
+            np.savetxt(tempfile.name + '.csv',newdata,header='Index, Timestamp(s), Amplitude, Horizontal Position, Vertical Position, Horizontal Waist, Vertical Waist, Distance to Rererence Beam')
+
+            shutil.move(tempfile.name + '.csv', os.path.join(self.path,name + '.csv'))
+
+
+
+
+            
+
+
+
 
 
 
@@ -1693,6 +1821,8 @@ class App_Launcher(object):
 
         # When the timer is timed out, 'updateview' is called
         self.viewtimer.timeout.connect(self.updateview)
+
+        # self.autosavetimer.timeout.connect(self.AutosaveBeamProps(timeinterval=3.0))
 
 
         
