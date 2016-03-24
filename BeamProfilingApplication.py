@@ -569,6 +569,14 @@ class App_Launcher(object):
 
         self.SearchCameras()
 
+        self.amprange = None
+        self.poshorrange = None
+        self.posvertrange = None
+        self.waisthorrange = None
+        self.waistvertrange = None
+        self.distrange = None
+
+
         self.runApp()
 
 
@@ -1442,6 +1450,7 @@ class App_Launcher(object):
 
 
 
+
     #################################################################################################
     #################################################################################################
     # Methods for updating the image and the analysis plots.
@@ -1796,6 +1805,99 @@ class App_Launcher(object):
             <span style="color: #FFF; font-size: 10pt;">Vertical Waist: %0.2f</span></div>' %(amplitude,x,y,waistx,waisty))
 
 
+
+    def timeplotampchanged(self):
+        if self.gui.ui.ampRadio.isChecked():
+            if self.amprange != None:
+                self.gui.timeplot.setRange(rect=self.amprange)
+            else:
+                self.gui.timeplot.enableAutoRange()
+        else:
+            # print self.gui.timeplot.saveState()['view']['autoRange'], "Autorange State"
+            autorangecheck = self.gui.timeplot.saveState()['view']['autoRange']
+            if autorangecheck[1] > 0:
+                self.amprange = None
+            else:
+                self.amprange = self.gui.timeplot.viewRect()
+
+
+    def timeplotposhorchanged(self):
+        if self.gui.ui.poshorRadio.isChecked():
+            if self.poshorrange != None:
+                self.gui.timeplot.setRange(rect=self.poshorrange)
+            else:
+                self.gui.timeplot.enableAutoRange()
+        else:
+            # print self.gui.timeplot.saveState()['view']['autoRange'], "Autorange State"
+            autorangecheck = self.gui.timeplot.saveState()['view']['autoRange']
+            if autorangecheck[1] > 0:
+                self.poshorrange = None
+            else:
+                self.poshorrange = self.gui.timeplot.viewRect()
+
+
+    def timeplotposvertchanged(self):
+        if self.gui.ui.posvertRadio.isChecked():
+            if self.posvertrange != None:
+                self.gui.timeplot.setRange(rect=self.posvertrange)
+            else:
+                self.gui.timeplot.enableAutoRange()
+        else:
+            # print self.gui.timeplot.saveState()['view']['autoRange'], "Autorange State"
+            autorangecheck = self.gui.timeplot.saveState()['view']['autoRange']
+            if autorangecheck[1] > 0:
+                self.posvertrange = None
+            else:
+                self.posvertrange = self.gui.timeplot.viewRect()
+
+
+    def timeplotwaisthorchanged(self):
+        if self.gui.ui.waisthorRadio.isChecked():
+            if self.waisthorrange != None:
+                self.gui.timeplot.setRange(rect=self.waisthorrange)
+            else:
+                self.gui.timeplot.enableAutoRange()
+        else:
+            # print self.gui.timeplot.saveState()['view']['autoRange'], "Autorange State"
+            autorangecheck = self.gui.timeplot.saveState()['view']['autoRange']
+            if autorangecheck[1] > 0:
+                self.waisthorrange = None
+            else:
+                self.waisthorrange = self.gui.timeplot.viewRect()
+
+
+    def timeplotwaistvertchanged(self):
+        if self.gui.ui.waistvertRadio.isChecked():
+            if self.waistvertrange != None:
+                self.gui.timeplot.setRange(rect=self.waistvertrange)
+            else:
+                self.gui.timeplot.enableAutoRange()
+        else:
+            # print self.gui.timeplot.saveState()['view']['autoRange'], "Autorange State"
+            autorangecheck = self.gui.timeplot.saveState()['view']['autoRange']
+            if autorangecheck[1] > 0:
+                self.waistvertrange = None
+            else:
+                self.waistvertrange = self.gui.timeplot.viewRect()
+
+
+    def timeplotdistchanged(self):
+        if self.gui.ui.distRadio.isChecked():
+            if self.distrange != None:
+                self.gui.timeplot.setRange(rect=self.distrange)
+            else:
+                self.gui.timeplot.enableAutoRange()
+        else:
+            # print self.gui.timeplot.saveState()['view']['autoRange'], "Autorange State"
+            autorangecheck = self.gui.timeplot.saveState()['view']['autoRange']
+            if autorangecheck[1] > 0:
+                self.distrange = None
+            else:
+                self.distrange = self.gui.timeplot.viewRect()
+
+
+
+
     def updatetimescrolling(self):
         '''
         The time evolution plot is updated.
@@ -1809,16 +1911,18 @@ class App_Launcher(object):
             self.gui.ui.waisthorRadio.setEnabled(True)
             self.gui.ui.waistvertRadio.setEnabled(True)
             self.gui.ui.distRadio.setEnabled(True)
+
             if self.gui.ui.ampRadio.isChecked():
                 self.gui.timeplot.plot(timescale,self.databuffer[2,:],clear=True)
                 self.gui.timeplot.setLabel('left', "Amplitude", units='')
+                
 
             if self.gui.ui.poshorRadio.isChecked():
                 self.gui.timeplot.plot(timescale,self.databuffer[3,:],clear=True)
                 if self.muperpxl == None:
                     self.gui.timeplot.setLabel('left', "Horizontal Position", units='px')
                 else:
-                    self.gui.timeplot.setLabel('left', "Horizontal Position", units='mu m')
+                    self.gui.timeplot.setLabel('left', "Horizontal Position", units='um')
 
 
             if self.gui.ui.posvertRadio.isChecked():
@@ -1826,21 +1930,21 @@ class App_Launcher(object):
                 if self.muperpxl == None:
                     self.gui.timeplot.setLabel('left', "Vertical Position", units='px')
                 else:
-                    self.gui.timeplot.setLabel('left', "Vertical Position", units='mu m')
+                    self.gui.timeplot.setLabel('left', "Vertical Position", units='um')
 
             if self.gui.ui.waisthorRadio.isChecked():
                 self.gui.timeplot.plot(timescale,self.databuffer[5,:],clear=True)
                 if self.muperpxl == None:
                     self.gui.timeplot.setLabel('left', "Horizontal Waist", units='px')
                 else:
-                    self.gui.timeplot.setLabel('left', "Horizontal Waist", units='mu m')
+                    self.gui.timeplot.setLabel('left', "Horizontal Waist", units='um')
 
             if self.gui.ui.waistvertRadio.isChecked():
                 self.gui.timeplot.plot(timescale,self.databuffer[6,:],clear=True)
                 if self.muperpxl == None:
                     self.gui.timeplot.setLabel('left', "Vertical Waist", units='px')
                 else:
-                    self.gui.timeplot.setLabel('left', "Vertical Waist", units='mu m')
+                    self.gui.timeplot.setLabel('left', "Vertical Waist", units='um')
             if self.gui.ui.distRadio.isChecked():
                 distance = np.sqrt((self.databuffer[3,:]-self.gui.ui.x0Spin.value())**2+\
                     (self.databuffer[4,:]-self.gui.ui.y0Spin.value())**2)
@@ -1848,7 +1952,7 @@ class App_Launcher(object):
                 if self.muperpxl == None:
                     self.gui.timeplot.setLabel('left', "Distance to reference peak", units='px')
                 else:
-                    self.gui.timeplot.setLabel('left', "Distance to reference peak", units='mu m')
+                    self.gui.timeplot.setLabel('left', "Distance to reference peak", units='um')
 
         else:
             self.gui.ui.ampRadio.setChecked(True)
@@ -1959,6 +2063,13 @@ class App_Launcher(object):
         self.gui.ui.exposureSpin.valueChanged.connect(self.updateexposuretime)
 
         self.gui.ui.gainSpin.valueChanged.connect(self.updategainvalue)
+
+        self.gui.ui.ampRadio.toggled.connect(self.timeplotampchanged)
+        self.gui.ui.poshorRadio.toggled.connect(self.timeplotposhorchanged)
+        self.gui.ui.posvertRadio.toggled.connect(self.timeplotposvertchanged)
+        self.gui.ui.waisthorRadio.toggled.connect(self.timeplotwaisthorchanged)
+        self.gui.ui.waistvertRadio.toggled.connect(self.timeplotwaistvertchanged)
+        self.gui.ui.distRadio.toggled.connect(self.timeplotdistchanged)
 
         # When the timer is timed out, 'updateview' is called
         self.viewtimer.timeout.connect(self.updateview)
