@@ -81,6 +81,7 @@ class Camera_API(object):
     def GetNextImage(self):
         '''
         This method gets the next image and stores it in self.imageArray.
+        If no image is received: raise an exception: "raise Exception('Grabbing next image failed!')"
         '''
 
         print "This method is not implemented here!"

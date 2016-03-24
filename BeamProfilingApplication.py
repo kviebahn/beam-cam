@@ -246,8 +246,11 @@ class Ui_Window(object):
         '''
 
         fileMenu = self.menubar.addMenu('&File')
-        exitAction = QtGui.QAction('Exit', self.mainwin)        
+        exitAction = QtGui.QAction('Exit', self.mainwin)
+        exitAction.setShortcut('Ctrl+Q')    
+        exitAction.setStatusTip('Exit application')    
         exitAction.triggered.connect(QtGui.qApp.quit)
+
         fileMenu.addAction(exitAction)
         fileMenu.addSeparator()
 
@@ -285,8 +288,8 @@ class Ui_Window(object):
         '''
 
         #Add color (test)
-        pos = np.array([0.0,0.5,1.0])
-        color = np.array([[0,0,0,255],[255,128,0,255],[255,255,0,255]],dtype=np.ubyte)
+        # pos = np.array([0.0,0.5,1.0])
+        # color = np.array([[0,0,0,255],[255,128,0,255],[255,255,0,255]],dtype=np.ubyte)
         ## OR Copy from matplotlib
         pos = np.linspace(0,1,256)
         color = np.array([cm.afmhot(i) for i in range(256)])
@@ -609,6 +612,7 @@ class App_Launcher(object):
         self.gui.roi.setSize([int(self.imagesize[0]*3/4.),int(self.imagesize[1]*3/4.)],finish=False)
 
         self.saturationvalue = self.camera.GetSaturationValue()
+        print self.saturationvalue, "Saturation Value"
         # Switch off status LED
         # camera.SetStatusLED(camera.CamIndex,False)
 
@@ -690,6 +694,7 @@ class App_Launcher(object):
         '''
 
         refreshAction = QtGui.QAction('Refresh', self.gui.cameramenu)
+        refreshAction.setShortcut('Ctrl+N')
         self.gui.cameramenu.addAction(refreshAction)
         self.gui.cameramenu.addSeparator()
 
@@ -708,12 +713,14 @@ class App_Launcher(object):
     def InitializeSaveOptions(self):
 
         setPathAction = QtGui.QAction('Change Directory', self.gui.filemenu)
+        setPathAction.setShortcut('Ctrl+D')
         self.gui.filemenu.addAction(setPathAction)
         self.gui.mainwin.connect(setPathAction,QtCore.SIGNAL('triggered()'), lambda: self.SetPath())
 
         self.gui.filemenu.addSeparator()
 
         saveImageAction = QtGui.QAction('Save Image', self.gui.filemenu)
+        saveImageAction.setShortcut('Ctrl+I')
         self.gui.filemenu.addAction(saveImageAction)
         self.gui.mainwin.connect(saveImageAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImage())
 
@@ -722,6 +729,7 @@ class App_Launcher(object):
         self.gui.mainwin.connect(saveImageAsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImageAs())
 
         saveWidgetAction = QtGui.QAction('Save Image Widget', self.gui.filemenu)
+        saveWidgetAction.setShortcut('Ctrl+W')
         self.gui.filemenu.addAction(saveWidgetAction)
         self.gui.mainwin.connect(saveWidgetAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImageWidget())
 
@@ -730,6 +738,7 @@ class App_Launcher(object):
         self.gui.mainwin.connect(saveWidgetAsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImageWidgetAs())
 
         saveDataBufferAction = QtGui.QAction('Save Data Buffer', self.gui.filemenu)
+        saveDataBufferAction.setShortcut('Ctrl+B')
         self.gui.filemenu.addAction(saveDataBufferAction)
         self.gui.mainwin.connect(saveDataBufferAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveDataBuffer())
 
@@ -738,14 +747,17 @@ class App_Launcher(object):
         self.gui.mainwin.connect(saveDataBufferAsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveDataBufferAs())
 
         saveActualBeamPropsAction = QtGui.QAction('Save Actual Beam Properties', self.gui.filemenu)
+        saveActualBeamPropsAction.setShortcut('Ctrl+S')
         self.gui.filemenu.addAction(saveActualBeamPropsAction)
         self.gui.mainwin.connect(saveActualBeamPropsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveDataSimple())
 
         saveActualDataDistAction = QtGui.QAction('Save Data with Distance Stamp', self.gui.filemenu)
+        saveActualDataDistAction.setShortcut('Ctrl+X')
         self.gui.filemenu.addAction(saveActualDataDistAction)
         self.gui.mainwin.connect(saveActualDataDistAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveDataDistanceStamp())
 
         self.autosaveAction = QtGui.QAction('Autosave', self.gui.filemenu)
+        self.autosaveAction.setShortcut('Ctrl+A')
         self.gui.filemenu.addAction(self.autosaveAction)
         self.autosaveAction.setCheckable(True)
         # autosaveAction.triggered.connect(self.AutosavePressAction(autosaveAction.isChecked()))
@@ -803,13 +815,23 @@ class App_Launcher(object):
             name = str(name)
 
         # Change colormap here (any matplotlib colormap possible)
+        # if self.RealData:
+        #     imgraw = np.uint8(cm.afmhot(self.imagearray*1./self.saturationvalue)*self.saturationvalue)
+        # if not self.RealData:
+        #     imgraw = np.uint8(cm.afmhot(self.imagearray*1./255.)*255)
+
+
+        cmap = cm.afmhot
+
+        m = cm.ScalarMappable(norm=None, cmap=cmap)
         if self.RealData:
-            imgraw = np.uint8(cm.jet(self.imagearray*1./self.saturationvalue)*self.saturationvalue)
+            colormapped = m.to_rgba(self.imagearray/float(self.saturationvalue))*self.saturationvalue
         if not self.RealData:
-            imgraw = np.uint8(cm.jet(self.imagearray*1./255.)*255)
+            colormapped = m.to_rgba(self.imagearray/255.)*255
+        img = Image.fromarray(np.uint8(colormapped))
 
 
-        img = Image.fromarray(imgraw)
+        # img = Image.fromarray(imgraw)
         img = img.transpose(Image.FLIP_TOP_BOTTOM)
         img.save(os.path.join(self.path,name + '.png'))
 
@@ -833,7 +855,23 @@ class App_Launcher(object):
         else:
             name = str(name)
 
-        pic = QtGui.QPixmap.grabWidget(self.gui.ui.plot)
+        recti = self.gui.p2.boundingRect()
+        # rectii = self.gui.text.boundingRect()
+        rectii = self.gui.p3.boundingRect()
+
+        # viewrange = self.gui.view.viewRange()
+        # viewwidth = viewrange[0][1]-viewrange[0][0]
+
+        # recti = recti.toRect()
+        # rectii = rectii.toRect()
+
+        # print recti.width(), "image width"
+        # print rectii.width(), "plot width"
+        # print viewwidth, "view width"
+
+        width = recti.width() + rectii.width() + 15 # Number ensures nicer images. Can be changed individually.
+
+        pic = QtGui.QPixmap.grabWidget(self.gui.ui.plot,width=width)
         pic.save(os.path.join(self.path,name + '.png'))
 
     def SaveImageWidgetAs(self):
@@ -1012,8 +1050,10 @@ class App_Launcher(object):
 
         rotatemenu = self.gui.viewmenu.addMenu('Rotate View')
         clockwiseAction = QtGui.QAction('Clockwise',rotatemenu)
+        clockwiseAction.setShortcut('Ctrl+R')
         rotatemenu.addAction(clockwiseAction)
         counterclockwiseAction = QtGui.QAction('Counterclockwise',rotatemenu)
+        counterclockwiseAction.setShortcut('Ctrl+L')
         rotatemenu.addAction(counterclockwiseAction)
 
         self.gui.mainwin.connect(clockwiseAction,QtCore.SIGNAL('triggered()'), lambda: self.updaterotanglecw())
@@ -1136,7 +1176,10 @@ class App_Launcher(object):
         self.RealData = True
 
         if totalcamnumber != 0:
-            camtypeindex = cameratypes.index(self.activecamtype)
+            if self.activecamtype != None:
+                camtypeindex = cameratypes.index(self.activecamtype)
+            else:
+                camtypeindex = 0
             if self.activecamserial in self.cameratotallist[camtypeindex]:
                 self.camera = self.cameratypeobj[camtypeindex]
                 self.camera.StartCamera(camindex=self.cameratotallist[camtypeindex].index(self.activecamserial))
@@ -1247,6 +1290,10 @@ class App_Launcher(object):
         self.camera = "Simulation in use"
         self.simulation = Sim.GaussBeamSimulation()
         self.simulation.CreateImages()
+        self.imagesize = (754,480)
+        self.gui.view.setRange(QtCore.QRectF(0, 0, self.imagesize[0], self.imagesize[1]))
+        self.gui.roi.setPos([int(self.imagesize[0]/8.),int(self.imagesize[1]/8.)],finish=False)
+        self.gui.roi.setSize([int(self.imagesize[0]*3/4.),int(self.imagesize[1]*3/4.)],finish=False)
         self.viewtimer.start()
 
 
@@ -1281,6 +1328,38 @@ class App_Launcher(object):
             self.StartDemo()
             
         # print retval, "Retval"
+
+
+    def MessageNoImageReceived(self):
+        '''
+        Creates the messagebox that is shown when no image is received from the camera.
+        '''
+
+
+        message = QtGui.QMessageBox()
+        message.setIcon(QtGui.QMessageBox.Warning)
+        message.setText("No image received!")
+        message.setInformativeText("Make sure the camera is still connected and ready to use. How do you want to continue?")
+        # message.setStandardButtons(QtGui.QMessageBox.Close)
+        closebutton = message.addButton("Close",QtGui.QMessageBox.DestructiveRole)
+        # message.addButton(QtGui.QMessageBox.Yes)
+        searchbutton = message.addButton("Search",QtGui.QMessageBox.YesRole)
+        # message.connect(searchbutton,QtCore.SIGNAL('clicked()'),self.RefreshCameras)
+        demobutton = message.addButton("Start Demo",QtGui.QMessageBox.NoRole)
+
+
+
+        retval = message.exec_()
+        if message.clickedButton() == closebutton:
+            self.viewtimer.stop()
+
+        if message.clickedButton() == searchbutton:
+            print "Search cameras!!"
+            self.SearchCameras()
+
+        if message.clickedButton() == demobutton:
+            print "Start Demo!!"
+            self.StartDemo()
 
 
     def CreateDataBuffer(self):
@@ -1387,14 +1466,16 @@ class App_Launcher(object):
                 self.simulation.ChooseImage()
                 self.imagearray = self.simulation.image
             else:
-                # try:
-                #     self.camera.GetNextImage()
-                #     self.imagearray = self.camera.GiveImage()
-                # except: # Show last image if grab failed -> Does not work (?)
-                #     self.imagearray = np.rot90(self.imagearray,-1*self.rotangle)
+                try:
+                    self.camera.GetNextImage()
+                    self.imagearray = self.camera.GiveImage()
+                    # print self.camera.GiveImage(), "Image Array"
+                except: # Show last image if grab failed -> Does not work (?)
+                    self.MessageNoImageReceived()
+                    # self.imagearray = np.rot90(self.imagearray,-1*self.rotangle)
 
-                self.camera.GetNextImage()
-                self.imagearray = self.camera.GiveImage()
+                # self.camera.GetNextImage()
+                # self.imagearray = self.camera.GiveImage()
 
             # print 'Image before updateROI: ',self.imagearray[23,65]
 

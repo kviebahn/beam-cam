@@ -379,7 +379,15 @@ class CameraTypeSpecific_API(Camera_API):
         # print "name", __name__
         timeout = c_ulong(5000)
         self.dll.xiGetImage.argtypes = [c_void_p,c_ulong,POINTER(Image)]
-        self.GetErrorInfo(self.dll.xiGetImage(self.handle,timeout,byref(self.imagecontainer)))
+
+        success = self.dll.xiGetImage(self.handle,timeout,byref(self.imagecontainer))
+        self.GetErrorInfo(success)
+
+        if success > 0:
+            self.StopCamera()
+            raise Exception('Grabbing next image failed!')
+
+
 
         # print 'Get Image'
         # print ImageFormat[self.imagecontainer.frm] ,"Color Format"

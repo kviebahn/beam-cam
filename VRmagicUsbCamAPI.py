@@ -541,6 +541,8 @@ class CameraTypeSpecific_API(Camera_API):
                 
         if Error==0:
             self.ShowErrorInformation()
+            self.StopCamera()
+            raise Exception('Grabbing next image failed!')
         if Error==1:
 
             ImageList = list(source_image_p.contents.mp_buffer[0:(self.format.m_height)*int(source_image_p.contents.m_pitch)])
