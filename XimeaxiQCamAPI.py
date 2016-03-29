@@ -208,7 +208,7 @@ class CameraTypeSpecific_API(Camera_API):
 
     	self.numberCams = numbercams.value
 
-    	print "Number of Cameras: ", numbercams.value
+    	# print "Number of Cameras: ", numbercams.value
     	
 
 
@@ -249,14 +249,14 @@ class CameraTypeSpecific_API(Camera_API):
     	
     	self.GetErrorInfo(self.dll.xiOpenDevice(camid,byref(self.handle)))
 
-    	print "Camera opened succesfully"
+    	# print "Camera opened succesfully"
 
 
     def CloseCamera(self):
 
     	self.GetErrorInfo(self.dll.xiCloseDevice(self.handle))
 
-    	print "Device closed!"
+    	# print "Device closed!"
 
 
     def StartAcquisition(self):
@@ -312,9 +312,9 @@ class CameraTypeSpecific_API(Camera_API):
         '''
 
         self.CamIndex = camindex
-        print "name", __name__
+        # print "name", __name__
         self.OpenCamera()
-        print "name", __name__
+        # print "name", __name__
         self.StartAcquisition()
 
         print 'Cam started'
@@ -344,7 +344,7 @@ class CameraTypeSpecific_API(Camera_API):
 
         # numbercams = c_uint32(0)
         # self.GetErrorInfo(self.dll.xiGetNumberDevices(byref(numbercams)))
-        print "name", __name__
+        # print "name", __name__
 
         self.GetErrorInfo(self.GetNumberCams())
         cameralist = []
@@ -363,7 +363,7 @@ class CameraTypeSpecific_API(Camera_API):
 
         self.cameraList = cameralist
         return self.cameraList
-        print "name", __name__
+        # print "name", __name__
 
     def GetNextImage(self):
         '''

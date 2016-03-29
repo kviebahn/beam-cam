@@ -48,6 +48,7 @@ According to test in debug mode: at this point __name__ = None.
 -Maybe install pyqtgraph properly, no just copy folder.
 -Or 64bit issue.
 NOT UNDERSTOOD AT THE MOMENT!!
+The same error occurs when trying to print numpy arrays.
 '''
 import scipy.ndimage.filters
 '''----------------------------------------------------------'''
@@ -560,12 +561,14 @@ class App_Launcher(object):
         # The image size as tuple (width,height)
         self.imagesize = (754,754)
 
+        self.colormap = cm.afmhot
+
         self.saturationvalue = None
         self.saturationthreshold = 5
 
         self.muperpxl = None
 
-        self.path = os.getcwd()
+        self.path = self.InitializeDirectory()
 
         self.SearchCameras()
 
@@ -585,9 +588,12 @@ class App_Launcher(object):
 
     def InitializeCam(self):
         '''Initializes the camera, update the exposure time and gain value fields'''
+
+        success = self.InitializeCamProps()
         
-        ExpoTime = self.camera.GetExposureTime()
-        self.gui.ui.exposureSpin.setProperty("value", ExpoTime)
+        if success:
+            ExpoTime = self.camera.GetExposureTime()
+            self.gui.ui.exposureSpin.setProperty("value", ExpoTime)
         ExpoTimeRange = self.camera.GetExposureTimeRange()
         self.gui.ui.exposureSpin.setRange(ExpoTimeRange[0],ExpoTimeRange[1])
         # This applies only to steps shown in GUI (for better handling);
@@ -599,8 +605,9 @@ class App_Launcher(object):
             ExpoSteps = ExpoStepsReal
         self.gui.ui.exposureSpin.setSingleStep(ExpoSteps) 
 
-        GainValue = self.camera.GetGainValue()
-        self.gui.ui.gainSpin.setProperty("value", GainValue)
+        if success:
+            GainValue = self.camera.GetGainValue()
+            self.gui.ui.gainSpin.setProperty("value", GainValue)
         GainRange = self.camera.GetGainRange()
         self.gui.ui.gainSpin.setRange(GainRange[0],GainRange[1])
         # This applies only to steps shown in GUI (for better handling);
@@ -620,9 +627,52 @@ class App_Launcher(object):
         self.gui.roi.setSize([int(self.imagesize[0]*3/4.),int(self.imagesize[1]*3/4.)],finish=False)
 
         self.saturationvalue = self.camera.GetSaturationValue()
-        print self.saturationvalue, "Saturation Value"
+        # print self.saturationvalue, "Saturation Value"
         # Switch off status LED
         # camera.SetStatusLED(camera.CamIndex,False)
+
+        
+
+
+
+
+
+    def InitializeCamProps(self):
+        if os.path.exists('CameraConfig.csv'):
+            types,serials = np.loadtxt("CameraConfig.csv",delimiter=",",dtype=str,usecols=(0,1),unpack=True)
+            expo,gain = np.loadtxt("CameraConfig.csv",delimiter=",",dtype=float,usecols=(2,3),unpack=True)
+
+            if isinstance(types,basestring):
+                types = np.array([types])
+            if isinstance(serials,basestring):
+                serials = np.array([serials])
+            if isinstance(expo,float):
+                expo = np.array([expo])
+            if isinstance(gain,float):
+                gain = np.array([gain])
+            index = np.where(serials == self.activecamserial)
+
+            # print index, "Index"
+
+            if len(index[0]) == 1:
+                # print expo, "New expo and gain"
+                self.camera.SetExposureTime(expo[index])
+                ExpoTime = self.camera.GetExposureTime()
+                self.gui.ui.exposureSpin.setProperty("value", ExpoTime)
+                self.camera.SetGainValue(self.gui.ui.gainSpin.value())
+                GainValue = self.camera.GetGainValue()
+                self.gui.ui.gainSpin.setProperty("value", GainValue)
+                self.updatecameraconfigfile()
+                
+                return True
+            elif len(index[0]) > 1:
+                print "Detection error: Same serial appears several times!"
+                return False
+            else:
+                return False
+
+
+
 
     def InitializeViewBoxSize(self):
         '''
@@ -647,16 +697,25 @@ class App_Launcher(object):
             self.gui.roi.setSize([int(self.imagesize[0]/2.),int(self.imagesize[1]/2.)],finish=False)
 
 
-    def CreateFile(self,name='test'):
-        '''
-        creates an empty .txt file; intended for saving
-        not in use yet!
-        '''
-        if not os.path.exists(name):
-            f = open(name+'.txt', 'w')
-            f.close()
-        else:
-            print 'A file with this name already exists!'
+    # def CreateFile(self,name='test'):
+    #     '''
+    #     creates an empty .txt file; intended for saving
+    #     not in use yet!
+    #     '''
+    #     if not os.path.exists(name):
+    #         f = open(name+'.txt', 'w')
+    #         f.close()
+    #     else:
+    #         print 'A file with this name already exists!'
+
+    def InitializeDirectory(self):
+
+        datadir = os.path.join(os.getcwd(),'Data')
+
+        if not os.path.exists(datadir):
+            os.makedirs(datadir)
+
+        return datadir
 
 
     def ChangeCamera(self,camindex=0):
@@ -754,12 +813,12 @@ class App_Launcher(object):
         self.gui.filemenu.addAction(saveDataBufferAsAction)
         self.gui.mainwin.connect(saveDataBufferAsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveDataBufferAs())
 
-        saveActualBeamPropsAction = QtGui.QAction('Save Actual Beam Properties', self.gui.filemenu)
+        saveActualBeamPropsAction = QtGui.QAction('Save Current Beam Properties', self.gui.filemenu)
         saveActualBeamPropsAction.setShortcut('Ctrl+S')
         self.gui.filemenu.addAction(saveActualBeamPropsAction)
         self.gui.mainwin.connect(saveActualBeamPropsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveDataSimple())
 
-        saveActualDataDistAction = QtGui.QAction('Save Data with Distance Stamp', self.gui.filemenu)
+        saveActualDataDistAction = QtGui.QAction('Save Properties with Distance Stamp', self.gui.filemenu)
         saveActualDataDistAction.setShortcut('Ctrl+X')
         self.gui.filemenu.addAction(saveActualDataDistAction)
         self.gui.mainwin.connect(saveActualDataDistAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveDataDistanceStamp())
@@ -784,7 +843,7 @@ class App_Launcher(object):
 
     def SetPath(self):
 
-        dialog = QtGui.QFileDialog()
+        dialog = QtGui.QFileDialog(directory=self.path)
         pathtemp = str(QtGui.QFileDialog.getExistingDirectory(dialog, "Select Directory"))
 
         if os.path.isdir(pathtemp):
@@ -829,7 +888,8 @@ class App_Launcher(object):
         #     imgraw = np.uint8(cm.afmhot(self.imagearray*1./255.)*255)
 
 
-        cmap = cm.afmhot
+        # cmap = cm.afmhot
+        cmap = self.colormap
 
         m = cm.ScalarMappable(norm=None, cmap=cmap)
         if self.RealData:
@@ -1029,16 +1089,6 @@ class App_Launcher(object):
 
 
 
-            
-
-
-
-
-
-
-
-
-
     def InitializeSettings(self):
 
         saturationMenu = self.gui.settingsmenu.addMenu('Saturation')
@@ -1048,10 +1098,16 @@ class App_Launcher(object):
         buffersizeAction = QtGui.QAction('Buffer Size',self.gui.settingsmenu)
         self.gui.settingsmenu.addAction(buffersizeAction)
 
+        clearbufferAction = QtGui.QAction('Clear Buffer',self.gui.settingsmenu)
+        self.gui.settingsmenu.addAction(clearbufferAction)
+
+
         self.gui.mainwin.connect(thresholdAction,QtCore.SIGNAL('triggered()'),\
          lambda: self.AdjustSaturationThreshold())
         self.gui.mainwin.connect(buffersizeAction,QtCore.SIGNAL('triggered()'),\
          lambda: self.AdjustBufferSize())
+        self.gui.mainwin.connect(clearbufferAction,QtCore.SIGNAL('triggered()'),\
+         lambda: self.ClearBuffer())
 
 
     def InitializeView(self):
@@ -1068,11 +1124,15 @@ class App_Launcher(object):
         self.gui.mainwin.connect(counterclockwiseAction,QtCore.SIGNAL('triggered()'), lambda: self.updaterotangleccw())
 
 
+        colorAction = QtGui.QAction('Colormap',self.gui.viewmenu)
+        self.gui.viewmenu.addAction(colorAction)
+        self.gui.mainwin.connect(colorAction,QtCore.SIGNAL('triggered()'), lambda: self.ChangeColorMap())
+
         scalingAction = QtGui.QAction('Scaling',self.gui.viewmenu)
         self.gui.viewmenu.addAction(scalingAction)
-
-
         self.gui.mainwin.connect(scalingAction,QtCore.SIGNAL('triggered()'), lambda: self.AdjustScaling())
+
+
 
 
 
@@ -1128,6 +1188,37 @@ class App_Launcher(object):
             elif self.databuffersize > oldbuffersize:
                 newdatabuffer[1:,-oldbuffersize:] = self.databuffer[1:,]
             self.databuffer = newdatabuffer
+
+    def ClearBuffer(self):
+
+        self.databuffer = self.CreateDataBuffer()
+
+
+    def ChangeColorMap(self):
+        '''
+        Changing the used colormap.
+        '''
+        # For adding new colormaps: append the matplotlib.cm name in the cmaps list and specify a name,
+        # displayed in the menu in cmapnames.
+        cmaps = [cm.afmhot,cm.binary,cm.jet,cm.cool,cm.copper,cm.spectral,cm.winter,cm.autumn]
+        cmapnames = ['afmhot','binary','jet','cool','copper','spectral','winter','autumn']
+
+        act = cmaps.index(self.colormap)
+
+        item,ok = QtGui.QInputDialog.getItem(self.gui.win,"Change the Colormap",\
+            "Choose a colormap:",cmapnames,act,False)
+
+        if ok:
+            chosen = cmapnames.index(item)
+            self.colormap = cmaps[chosen]
+
+            pos = np.linspace(0,1,256)
+            color = np.array([self.colormap(i) for i in range(256)])
+            ####
+            map1 = pg.ColorMap(pos,color)
+            lut = map1.getLookupTable(0.0,1.0,256)
+            self.gui.img.setLookupTable(lut)
+            self.gui.img.setLevels([0,1])
 
 
 
@@ -1554,6 +1645,8 @@ class App_Launcher(object):
             self.camera.SetExposureTime(self.gui.ui.exposureSpin.value())
             ExpoTime = self.camera.GetExposureTime()
             self.gui.ui.exposureSpin.setProperty("value", ExpoTime)
+            self.updatecameraconfigfile()
+
 
     def updategainvalue(self):
 
@@ -1561,6 +1654,65 @@ class App_Launcher(object):
             self.camera.SetGainValue(self.gui.ui.gainSpin.value())
             GainValue = self.camera.GetGainValue()
             self.gui.ui.gainSpin.setProperty("value", GainValue)
+            self.updatecameraconfigfile()
+
+
+    def updatecameraconfigfile(self):
+
+        ExpoTime = self.camera.GetExposureTime()
+        GainValue = self.camera.GetGainValue()
+            
+        if not os.path.exists("CameraConfig.csv"):
+            data = np.array([self.activecamtype,self.activecamserial,ExpoTime,GainValue])
+            np.savetxt("CameraConfig.csv",data[None],fmt='%s',delimiter=",",header='Type, Serial, Exposure time, Gain')
+
+        else:
+            types,serials = np.loadtxt("CameraConfig.csv",delimiter=",",dtype=str,usecols=(0,1),unpack=True)
+            expo,gain = np.loadtxt("CameraConfig.csv",delimiter=",",dtype=float,usecols=(2,3),unpack=True)
+
+            # print types, "length types"
+            if isinstance(types,basestring):
+                types = np.array([types])
+            if isinstance(serials,basestring):
+                serials = np.array([serials])
+            if isinstance(expo,float):
+                expo = np.array([expo])
+            if isinstance(gain,float):
+                gain = np.array([gain])
+
+                
+            index = np.where(serials == self.activecamserial)
+            # print index[0], 'Index where'
+
+            if len(index[0]) == 0:
+                print "Does not exist!"
+                index = None
+            elif len(index[0]) > 1:
+                print "multiple serials exist! should not happen"
+                index = None
+            elif types[index] != self.activecamtype:
+                # print types[index], self.activecamtype, "Match?"
+                print "ERROR: Camera type and serial do not match! index set to None"
+                index = None
+                
+
+            if index != None:
+                types[index] = self.activecamtype
+                # print types, "Types new"
+                serials[index] = self.activecamserial
+                expo[index] = ExpoTime
+                gain[index] = GainValue
+                data = np.array([types,serials,expo,gain]).T
+            else:
+                data = np.array([types,serials,expo,gain]).T
+                # print data, "Data"
+                newdata = np.array([self.activecamtype,self.activecamserial,ExpoTime,GainValue])
+                # print newdata, "Newdata"
+                data = np.vstack((data,newdata))
+            np.savetxt("CameraConfig.csv",data,fmt='%s',delimiter=",",header='Type, Serial, Exposure time, Gain')
+
+
+
 
 
     def updaterotangleccw(self):

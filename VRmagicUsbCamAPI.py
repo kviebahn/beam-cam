@@ -217,7 +217,7 @@ class CameraTypeSpecific_API(Camera_API):
         No=c_uint(0)
         Error = self.dll.VRmUsbCamGetDeviceKeyListSize(byref(No))
 
-        print 'Number of cameras', No.value
+        # print 'Number of cameras', No.value
         if Error==1:
             return No.value
         else:
@@ -262,8 +262,8 @@ class CameraTypeSpecific_API(Camera_API):
 
             Errinf = self.dll.VRmUsbCamGetSerialString(self.key,byref(inf))
 
-            print 'Key', self.key
-            print ErrID, 'ID', ID.value
+            # print 'Key', self.key
+            # print ErrID, 'ID', ID.value
 
             serial = []
             i = 0
@@ -272,8 +272,8 @@ class CameraTypeSpecific_API(Camera_API):
                 serial.append(inf[i])
                 i += 1
             serial = ''.join(serial)
-            print 'Serial String: ', serial
-            print 'Busy: ', self.key.contents.m_busy
+            # print 'Serial String: ', serial
+            # print 'Busy: ', self.key.contents.m_busy
 
             return serial
 
@@ -341,7 +341,7 @@ class CameraTypeSpecific_API(Camera_API):
             sourceformat.append(inf[i])
             i += 1
         sourceformat = ''.join(sourceformat)
-        print 'Source format: ', sourceformat
+        # print 'Source format: ', sourceformat
 
 
 
@@ -460,7 +460,7 @@ class CameraTypeSpecific_API(Camera_API):
             if Error==0:
                 self.ShowErrorInformation()
             else:
-                print 'Device opened successfully'
+                # print 'Device opened successfully'
 
                 # self.GetDeviceInformation()
 
