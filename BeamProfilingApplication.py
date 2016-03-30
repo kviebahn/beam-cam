@@ -1794,9 +1794,11 @@ class App_Launcher(object):
 
         selected,coorddata = self.gui.roi.getArrayRegion(self.imagearray.T, self.gui.img,returnMappedCoords=True)
         xhor = coorddata[0][:,0]
+        xhortot = xhor
         if self.muperpxl != None:
             xhor = self.RescaleParameter(xhor)
         xvert = coorddata[1][0,:]
+        xverttot = xvert
         if self.muperpxl != None:
             xvert = self.RescaleParameter(xvert)
         # print 'horizontal data', xhor
@@ -1859,7 +1861,7 @@ class App_Launcher(object):
         # xhor = np.arange(datahor.size)
 
         if self.gui.ui.fitCheck.isChecked():
-            self.gui.p2.plot(xhor,MatTools.gaussian(xhor,*FittedParamsHor), pen=(0,255,0))
+            self.gui.p2.plot(xhor,MatTools.gaussian(xhortot,*FittedParamsHor), pen=(0,255,0))
 
         # Plot amplitude
         xamp = np.array([1.,2.])
@@ -1873,7 +1875,7 @@ class App_Launcher(object):
         # xvert = np.arange(datavert.size)
 
         if self.gui.ui.fitCheck.isChecked():
-            self.gui.p3.plot(xvert,MatTools.gaussian(xvert,*FittedParamsVert), pen=(0,255,0)).rotate(90)
+            self.gui.p3.plot(xvert,MatTools.gaussian(xverttot,*FittedParamsVert), pen=(0,255,0)).rotate(90)
             poshor = FittedParamsHor[2]
             posvert = FittedParamsVert[2]
             waistx = FittedParamsHor[1]
