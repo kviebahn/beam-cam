@@ -26,6 +26,21 @@ Please see the README.md file for a copy of the GNU General Public License, or o
 """
 
 
+'''
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+WATCH OUT!!!!
+----------------------------
+THIS IS AN OLD VERSION: NOT RUNNING WITH THE CURRENT ImageViewerTemplate!
+----------------------------
+RUN BeamProfilingApplication.py TO START THE UP-TO-DATE PROGRAM!!
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+'''
+
+
 import GaussBeamSimulation as Sim
 reload(Sim)
 import MathematicalTools as MatTools

@@ -591,9 +591,11 @@ class App_Launcher(object):
 
         success = self.InitializeCamProps()
         
-        if success:
+        if not success:
             ExpoTime = self.camera.GetExposureTime()
-            self.gui.ui.exposureSpin.setProperty("value", ExpoTime)
+            print ExpoTime, "ExpoTime"
+            # self.gui.ui.exposureSpin.setProperty("value", ExpoTime)
+            self.gui.ui.exposureSpin.setValue(ExpoTime)
         ExpoTimeRange = self.camera.GetExposureTimeRange()
         self.gui.ui.exposureSpin.setRange(ExpoTimeRange[0],ExpoTimeRange[1])
         # This applies only to steps shown in GUI (for better handling);
@@ -605,9 +607,11 @@ class App_Launcher(object):
             ExpoSteps = ExpoStepsReal
         self.gui.ui.exposureSpin.setSingleStep(ExpoSteps) 
 
-        if success:
+        if not success:
             GainValue = self.camera.GetGainValue()
-            self.gui.ui.gainSpin.setProperty("value", GainValue)
+            print GainValue, "Gain Value"
+            # self.gui.ui.gainSpin.setProperty("value", GainValue)
+            self.gui.ui.gainSpin.setValue(GainValue)
         GainRange = self.camera.GetGainRange()
         self.gui.ui.gainSpin.setRange(GainRange[0],GainRange[1])
         # This applies only to steps shown in GUI (for better handling);
@@ -670,6 +674,8 @@ class App_Launcher(object):
                 return False
             else:
                 return False
+        else:
+            return False
 
 
 
@@ -795,6 +801,15 @@ class App_Launcher(object):
         self.gui.filemenu.addAction(saveImageAsAction)
         self.gui.mainwin.connect(saveImageAsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImageAs())
 
+        saveImageRawAction = QtGui.QAction('Save Image Raw Data', self.gui.filemenu)
+        saveImageRawAction.setShortcut('Ctrl+K')
+        self.gui.filemenu.addAction(saveImageRawAction)
+        self.gui.mainwin.connect(saveImageRawAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImageRaw())
+
+        saveImageRawAsAction = QtGui.QAction('Save Image Raw Data as..', self.gui.filemenu)
+        self.gui.filemenu.addAction(saveImageRawAsAction)
+        self.gui.mainwin.connect(saveImageRawAsAction,QtCore.SIGNAL('triggered()'), lambda: self.SaveImageRawAs())
+
         saveWidgetAction = QtGui.QAction('Save Image Widget', self.gui.filemenu)
         saveWidgetAction.setShortcut('Ctrl+W')
         self.gui.filemenu.addAction(saveWidgetAction)
@@ -914,6 +929,25 @@ class App_Launcher(object):
         ok,name = self.EnterFileName()
         if ok:
             self.SaveImage(name=name)
+
+
+    def SaveImageRaw(self,name=None):
+
+        if name == None:
+            # t = time.mktime(t)
+            name = time.strftime("%b-%d-%Y_%H-%M-%S",time.localtime())
+            name = "ImageRawData" + name
+        else:
+            name = str(name)
+
+        np.save(os.path.join(self.path,name),self.imagearray)
+
+    def SaveImageRawAs(self):
+        
+        ok,name = self.EnterFileName()
+        if ok:
+            self.SaveImageRaw(name=name)
+
 
     def SaveImageWidget(self,name=None):
 
