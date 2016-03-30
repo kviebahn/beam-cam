@@ -2171,9 +2171,13 @@ class App_Launcher(object):
         ysize = self.origroisize[1]
         if xpos < 0:
             xpos = 0
+        if xpos > self.imagesize[0]:
+            xpos = self.imagesize[0] - xsize
         ypos = y-int(self.origroisize[1]/2.)
         if ypos < 0:
             ypos = 0
+        if ypos > self.imagesize[1]:
+            ypos = self.imagesize[1] - ysize
         if xpos + self.origroisize[0] >= self.imagesize[0]:
             xsize = self.imagesize[0] - xpos - 1
         if ypos + self.origroisize[1] >= self.imagesize[1]:
