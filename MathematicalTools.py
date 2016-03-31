@@ -54,8 +54,15 @@ def gaussian2(xy, *p):
 
 
 
-def FitGaussian(data,xdata=None):
-    '''fits gaussian to data'''
+def FitGaussian(data,xdata=None,usesplit=False,useslice=False,meansize=5,critsplitvalue=100,critslicevalue=50):
+    '''
+    fits gaussian to data
+    usesplit: Should the 'split' method be used to improve performance?
+    useslice: If usesplit is True, usesclice has to be False!!!!! Use sclicing?
+    meansize: if usesplit = True: how many values are taken together to calculate the mean.
+    critsplitvalue: value from which on the 'split' method is used.
+    critslicevalue: threshold for slicing data.
+    '''
 
     # def splitold(arr, size):
     #     '''
@@ -140,11 +147,11 @@ def FitGaussian(data,xdata=None):
 
 
     # x = np.arange(data.size)
-    usesplit = False # Should the 'split' method be used to improve performance?
-    useslice = True # If usesplit is True, usesclice has to be False!!!!! Use sclicing?
-    meansize = 5 # if usepervimpro = True: how many values are taken together to calculate the mean.
-    critsplitvalue = 100 # value from which on the 'split' method is used.
-    critslicevalue = 50 # threshold for slicing data.
+    # usesplit = False # Should the 'split' method be used to improve performance?
+    # useslice = True # If usesplit is True, usesclice has to be False!!!!! Use sclicing?
+    # meansize = 5 # if usepervimpro = True: how many values are taken together to calculate the mean.
+    # critsplitvalue = 100 # value from which on the 'split' method is used.
+    # critslicevalue = 50 # threshold for slicing data.
     if xdata != None:
         x = xdata
     else:

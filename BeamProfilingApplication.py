@@ -25,13 +25,28 @@ GNU General Public License for more details.
 Please see the README.md file for a copy of the GNU General Public License, or otherwise find it on <http://www.gnu.org/licenses/>.
 """
 
+'''!!COMMENT OUT THE OPTIONS THAT YOU DO NOT WANT!!'''
 
-
+'''Using both camera types (VRmagic and Ximea)'''
 cameratypes = ['VRmagic USB','Ximea xiQ']
 cameraapinames = ['VRmagicUsbCamAPI','XimeaxiQCamAPI']
 
+
+# '''Using VRmagic cameras only'''
+# cameratypes = ['VRmagic USB']
+# cameraapinames = ['VRmagicUsbCamAPI']
+
+
+# '''Using Ximea xiQ cameras only'''
+# cameratypes = ['Ximea xiQ']
+# cameraapinames = ['XimeaxiQCamAPI']
+
+
+# '''Only use demo'''
 # cameratypes = []
 # cameraapinames = []
+
+'''-----------------------------------------------'''
 
 
 
@@ -1869,6 +1884,7 @@ class App_Launcher(object):
 
         self.gui.p2.plot(xhor,datahor, clear=True)
         FittedParamsHor = MatTools.FitGaussian(datahor,xhor)[0]
+        # FittedParamsHor = [3000,30,300,0]
         # xhor = np.arange(datahor.size)
 
         if self.gui.ui.fitCheck.isChecked():
@@ -1883,6 +1899,7 @@ class App_Launcher(object):
         
         self.gui.p3.plot(xvert,datavert, clear=True).rotate(90)
         FittedParamsVert = MatTools.FitGaussian(datavert,xvert)[0]
+        # FittedParamsVert = [3000,30,300,0]
         # xvert = np.arange(datavert.size)
 
         if self.gui.ui.fitCheck.isChecked():
