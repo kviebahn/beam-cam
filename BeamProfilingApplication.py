@@ -537,8 +537,11 @@ class App_Launcher(object):
         self.activecamserial = None
 
         self.imagearray = None
+
         self.databuffersize = 40000
+        self.databufferfilling = 0
         self.databuffer = self.CreateDataBuffer()
+        
         self.rotangle = 0
         self.starttime = time.time()
         self.origroisize = None
@@ -1226,6 +1229,7 @@ class App_Launcher(object):
     def ClearBuffer(self):
 
         self.databuffer = self.CreateDataBuffer()
+        self.databufferfilling = 0
 
 
     def ChangeColorMap(self):
@@ -1505,6 +1509,9 @@ class App_Launcher(object):
         bufferrange = np.arange(self.databuffersize)
         databuffer[0,:] = bufferrange
 
+        if self.databufferfilling > self.databuffersize:
+            self.databufferfilling = self.databuffersize
+
         return databuffer
 
 
@@ -1561,14 +1568,18 @@ class App_Launcher(object):
     def CheckSaturationData(self,xdata,ydata):
         if self.RealData:
             indices = np.argwhere(ydata>=self.saturationvalue)
-            xdatanew = np.delete(xdata,indices)
-            ydatanew = np.delete(ydata,indices)
+            # xdatanew = np.delete(xdata,indices)
+            # ydatanew = np.delete(ydata,indices)
+            ydata[indices] = -1
             
             # Exception when new arrays contain not enough data!!
-            if len(xdatanew) <= 5:
-                xdatanew = np.zeros(10)
-                ydatanew = np.zeros(10)
-            return xdatanew, ydatanew
+            # if len(xdatanew) <= 5:
+
+            #     print "ERROR - too many saturated pixel for proper fit!"
+
+            #     xdatanew = np.zeros(10)
+            #     ydatanew = np.zeros(10)
+            return xdata, ydata
         else:
             return xdata, ydata
 
@@ -1892,6 +1903,9 @@ class App_Launcher(object):
             self.databuffer[5,-1] = waistx
             self.databuffer[6,-1] = waisty
 
+            if self.databufferfilling < self.databuffersize:
+                self.databufferfilling += 1
+
             self.updatetext(amplitude,poshor,posvert,waistx,waisty)
 
 
@@ -2101,12 +2115,12 @@ class App_Launcher(object):
             self.gui.ui.distRadio.setEnabled(True)
 
             if self.gui.ui.ampRadio.isChecked():
-                self.gui.timeplot.plot(timescale,self.databuffer[2,:],clear=True)
+                self.gui.timeplot.plot(timescale[-self.databufferfilling:],self.databuffer[2,-self.databufferfilling:],clear=True)
                 self.gui.timeplot.setLabel('left', "Amplitude", units='')
                 
 
             if self.gui.ui.poshorRadio.isChecked():
-                self.gui.timeplot.plot(timescale,self.databuffer[3,:],clear=True)
+                self.gui.timeplot.plot(timescale[-self.databufferfilling:],self.databuffer[3,-self.databufferfilling:],clear=True)
                 if self.muperpxl == None:
                     self.gui.timeplot.setLabel('left', "Horizontal Position", units='px')
                 else:
@@ -2114,21 +2128,21 @@ class App_Launcher(object):
 
 
             if self.gui.ui.posvertRadio.isChecked():
-                self.gui.timeplot.plot(timescale,self.databuffer[4,:],clear=True)
+                self.gui.timeplot.plot(timescale[-self.databufferfilling:],self.databuffer[4,-self.databufferfilling:],clear=True)
                 if self.muperpxl == None:
                     self.gui.timeplot.setLabel('left', "Vertical Position", units='px')
                 else:
                     self.gui.timeplot.setLabel('left', "Vertical Position", units='um')
 
             if self.gui.ui.waisthorRadio.isChecked():
-                self.gui.timeplot.plot(timescale,self.databuffer[5,:],clear=True)
+                self.gui.timeplot.plot(timescale[-self.databufferfilling:],self.databuffer[5,-self.databufferfilling:],clear=True)
                 if self.muperpxl == None:
                     self.gui.timeplot.setLabel('left', "Horizontal Waist", units='px')
                 else:
                     self.gui.timeplot.setLabel('left', "Horizontal Waist", units='um')
 
             if self.gui.ui.waistvertRadio.isChecked():
-                self.gui.timeplot.plot(timescale,self.databuffer[6,:],clear=True)
+                self.gui.timeplot.plot(timescale[-self.databufferfilling:],self.databuffer[6,-self.databufferfilling:],clear=True)
                 if self.muperpxl == None:
                     self.gui.timeplot.setLabel('left', "Vertical Waist", units='px')
                 else:
@@ -2136,7 +2150,7 @@ class App_Launcher(object):
             if self.gui.ui.distRadio.isChecked():
                 distance = np.sqrt((self.databuffer[3,:]-self.gui.ui.x0Spin.value())**2+\
                     (self.databuffer[4,:]-self.gui.ui.y0Spin.value())**2)
-                self.gui.timeplot.plot(timescale,distance,clear=True)
+                self.gui.timeplot.plot(timescale[-self.databufferfilling:],distance[-self.databufferfilling:],clear=True)
                 if self.muperpxl == None:
                     self.gui.timeplot.setLabel('left', "Distance to reference peak", units='px')
                 else:

@@ -57,38 +57,97 @@ def gaussian2(xy, *p):
 def FitGaussian(data,xdata=None):
     '''fits gaussian to data'''
 
-    def split(arr, size):
-        '''
-        EXPERIMENTAL!
-        reduce size of fit array by taking mean over a certain number of cells
-        Not working with any xdata (still to implement)!!
-        '''
+    # def splitold(arr, size):
+    #     '''
+    #     EXPERIMENTAL!
+    #     reduce size of fit array by taking mean over a certain number of cells
+    #     Not working with any xdata (still to implement)!!
+    #     '''
+    #     length = arr.size
+    #     cutoff = length % size
+    #     arrs = arr[cutoff:]
+    #     arrs = arrs.reshape((int((length-cutoff)/size),size))
+    #     arrs = np.mean(arrs, axis=1)
+    #     return arrs, cutoff
+
+    def eraseinvalidvalues(ydata,xdata,thresholdval=-1):
+
+        indices = np.argwhere(ydata<=thresholdval)
+        xdatanew = np.delete(xdata,indices)
+        ydatanew = np.delete(ydata,indices)
+
+        return ydatanew, xdatanew
+
+
+    def split(arr,xarr,size):
+
         length = arr.size
         cutoff = length % size
-        arrs = arr[cutoff:]
-        arrs = arrs.reshape((int((length-cutoff)/size),size))
-        arrs = np.mean(arrs, axis=1)
-        return arrs, cutoff
+        # datalist = []
+        # xdatalist = []
+        datacut,remainingdata = np.split(arr,[cutoff])
+        xdatacut,remainingxdata = np.split(xarr,[cutoff])
+        # datalist.append(datacut)
+        # xdatalist.append(xdatacut)
+
+        # print "length", len(np.split(remainingdata,int((length-cutoff)/size)))
+
+        datalist = np.split(remainingdata,int((length-cutoff)/size))
+        xdatalist = np.split(remainingxdata,int((length-cutoff)/size))
+
+        datalist.insert(0,datacut)
+        xdatalist.insert(0,xdatacut)
+
+        newdatalist = []
+        newxdatalist = []
+
+        # print "Datalist", len(datalist)
+
+        for i in range(len(datalist)):
+            data,xdata = eraseinvalidvalues(datalist[i],xdatalist[i])
+            if len(data) > 0:
+                data = np.mean(data)
+                xdata = np.mean(xdata)
+                newdatalist.append(data)
+                newxdatalist.append(xdata)
+
+        newdatalist = np.asarray(newdatalist)
+        newxdatalist = np.asarray(newxdatalist)
+
+        return newdatalist,newxdatalist
+
+
+
+
+
+
+
+
 
     # x = np.arange(data.size)
     usepervimpro = False # Should the 'split' method be used to improve performance?
     meansize = 5 # if usepervimpro = True: how many values are taken together to calculate the mean.
-    critvalue = 200 # value from which on the 'split' method is used.
+    critvalue = 100 # value from which on the 'split' method is used.
     if xdata != None:
         x = xdata
     else:
-        if usepervimpro:
-            if data.size > critvalue:
-                data, cutoff = split(data,meansize)
-                corr = (meansize-1)/2.
-                x = np.arange(data.size)*meansize + corr + cutoff
-            else:
-                x = np.arange(data.size)
-        else:
-            x = np.arange(data.size)
+        x = np.arange(data.size)
     
-        
+    if usepervimpro:
+        if data.size > critvalue:
+            data, x = split(data,x,meansize)
+    else:
+        data, x = eraseinvalidvalues(data,x)
 
+    # print "Data", data
+
+    if data.size <= 5:
+        print "ERROR - too many saturated pixel for proper fit!"
+        data = np.zeros(10)
+        x = np.zeros(10)
+
+            
+            
     # print data
 
     def errf(params):
