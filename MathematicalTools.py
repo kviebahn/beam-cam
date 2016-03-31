@@ -116,6 +116,21 @@ def FitGaussian(data,xdata=None):
 
         return newdatalist,newxdatalist
 
+    def slicedata(arr,xarr,critslicevalue=100):
+
+        data, xdata = eraseinvalidvalues(arr,xarr)
+        slicenum = int(data.size/critslicevalue)
+        if slicenum > 0:
+            newlen = int(data.size/slicenum)
+            mask = slicenum * np.arange(newlen)
+            # print "mask", mask
+            data = data[mask]
+            xdata = xdata[mask]
+
+        return data, xdata
+
+
+
 
 
 
@@ -125,17 +140,23 @@ def FitGaussian(data,xdata=None):
 
 
     # x = np.arange(data.size)
-    usepervimpro = False # Should the 'split' method be used to improve performance?
+    usesplit = False # Should the 'split' method be used to improve performance?
+    useslice = True # If usesplit is True, usesclice has to be False!!!!! Use sclicing?
     meansize = 5 # if usepervimpro = True: how many values are taken together to calculate the mean.
-    critvalue = 100 # value from which on the 'split' method is used.
+    critsplitvalue = 100 # value from which on the 'split' method is used.
+    critslicevalue = 50 # threshold for slicing data.
     if xdata != None:
         x = xdata
     else:
         x = np.arange(data.size)
     
-    if usepervimpro:
-        if data.size > critvalue:
+    if usesplit:
+        if data.size > critsplitvalue:
             data, x = split(data,x,meansize)
+    elif useslice:
+        # print "use slicing"
+        data, x = slicedata(data,x,critslicevalue)
+        # print "length", len(data)
     else:
         data, x = eraseinvalidvalues(data,x)
 
