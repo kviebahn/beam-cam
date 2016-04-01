@@ -532,6 +532,9 @@ class App_Launcher(object):
 
 
     def __init__(self):
+        '''
+        Initializes the main class that runs the application.
+        '''
 
         self.RealData = True
 
@@ -660,6 +663,11 @@ class App_Launcher(object):
 
 
     def InitializeCamProps(self):
+        '''
+        If a CameraConfig.csv file exists, this method adjusts the settings of the camera (only if
+        the camera serial occurs in the config file).
+        '''
+
         if os.path.exists('CameraConfig.csv'):
             types,serials = np.loadtxt("CameraConfig.csv",delimiter=",",dtype=str,usecols=(0,1),unpack=True)
             expo,gain = np.loadtxt("CameraConfig.csv",delimiter=",",dtype=float,usecols=(2,3),unpack=True)
@@ -733,6 +741,9 @@ class App_Launcher(object):
     #         print 'A file with this name already exists!'
 
     def InitializeDirectory(self):
+        '''
+        Creates a "Data" folder as default directory for saving data.
+        '''
 
         datadir = os.path.join(os.getcwd(),'Data')
 
@@ -744,8 +755,7 @@ class App_Launcher(object):
 
     def ChangeCamera(self,camindex=0):
         '''
-        Stops old camera, starts new camera
-        TODO: Adapt for multiple camera types
+        Stops old camera, starts new camera.
         '''
         # print camindex, "Camindex"
         self.camera.StopCamera()
@@ -781,7 +791,6 @@ class App_Launcher(object):
     def InitializeCamSearch(self):
         '''
         This method initializes the camera menu and return the menu for each camera type.
-        TODO: Adapt for multiple camera types
         '''
 
         refreshAction = QtGui.QAction('Refresh', self.gui.cameramenu)
@@ -802,6 +811,9 @@ class App_Launcher(object):
 
 
     def InitializeSaveOptions(self):
+        '''
+        Initializes the save options in the file menu.
+        '''
 
         setPathAction = QtGui.QAction('Change Directory', self.gui.filemenu)
         setPathAction.setShortcut('Ctrl+D')
@@ -875,6 +887,9 @@ class App_Launcher(object):
 
 
     def SetPath(self):
+        '''
+        Sets the new path when changing the directory.
+        '''
 
         dialog = QtGui.QFileDialog(directory=self.path)
         pathtemp = str(QtGui.QFileDialog.getExistingDirectory(dialog, "Select Directory"))
@@ -886,6 +901,9 @@ class App_Launcher(object):
 
 
     def EnterFileName(self):
+        '''
+        Opens a window to enter a file name.
+        '''
 
         name,ok = QtGui.QInputDialog.getText(self.gui.win,"Save as ...",\
             "Enter name for data to be saved:")
@@ -899,6 +917,9 @@ class App_Launcher(object):
 
 
     def SaveImage(self,name=None):
+        '''
+        Saves the image as .png file
+        '''
 
         # color = np.array([[0,0,0,255],[255,128,0,255],[255,255,0,255]],dtype=np.ubyte)
         # color = cm.hot
@@ -943,6 +964,9 @@ class App_Launcher(object):
         # self.gui.view.export('test.png')
 
     def SaveImageAs(self):
+        '''
+        Saves the image as .png with self defined name.
+        '''
         
         ok,name = self.EnterFileName()
         if ok:
@@ -950,6 +974,9 @@ class App_Launcher(object):
 
 
     def SaveImageRaw(self,name=None):
+        '''
+        Saves raw data of image as .npy.
+        '''
 
         if name == None:
             # t = time.mktime(t)
@@ -961,6 +988,9 @@ class App_Launcher(object):
         np.save(os.path.join(self.path,name),self.imagearray)
 
     def SaveImageRawAs(self):
+        '''
+        Saves raw data of image as .npy with self defined name.
+        '''
         
         ok,name = self.EnterFileName()
         if ok:
@@ -968,6 +998,9 @@ class App_Launcher(object):
 
 
     def SaveImageWidget(self,name=None):
+        '''
+        Saves a part of the image widget as .png.
+        '''
 
         if name == None:
             name = time.strftime("%b-%d-%Y_%H-%M-%S",time.localtime())
@@ -995,6 +1028,9 @@ class App_Launcher(object):
         pic.save(os.path.join(self.path,name + '.png'))
 
     def SaveImageWidgetAs(self):
+        '''
+        Saves a part of the image widget as .png with self defined name.
+        '''
 
         ok,name = self.EnterFileName()
         if ok:
@@ -1003,6 +1039,9 @@ class App_Launcher(object):
 
 
     def SaveDataBuffer(self,name=None):
+        '''
+        Saves the databuffer as .csv.
+        '''
 
         if name == None:
             name = time.strftime("%b-%d-%Y_%H-%M-%S",time.localtime())
@@ -1013,11 +1052,18 @@ class App_Launcher(object):
         np.savetxt(os.path.join(self.path,name + '.csv'),self.databuffer.T,fmt='%.7e',header='Index, Timestamp, Amplitude, Horizontal Position, Vertical Position, Horizontal Waist, Vertical Waist, Distance to Rererence Beam')
 
     def SaveDataBufferAs(self):
+        '''
+        Saves the databuffer as .csv with self defined name.
+        '''
+
         ok,name = self.EnterFileName()
         if ok:
             self.SaveDataBufferAs(name=name)
 
     def SaveDataSimple(self):
+        '''
+        Appends the current beam properties to a .csv file and creates this if it doesn't exist yet.
+        '''
 
         name = "BeamData-" + str(self.session) + "-" + time.strftime("%b-%d-%Y_%H-%M-%S",self.starttimefile)
 
@@ -1043,6 +1089,10 @@ class App_Launcher(object):
 
 
     def SaveDataDistanceStamp(self):
+        '''
+        Appends the current beam properties with a distance stamp (has to be entered) to a .csv file and
+        creates this if it doesn't exist yet.
+        '''
 
         number,ok = QtGui.QInputDialog.getDouble(self.gui.win,"Save Beam Properties with Distance Stamp",\
             "Enter a distance stamp:",decimals=4)
@@ -1073,12 +1123,19 @@ class App_Launcher(object):
                 shutil.move(tempfile.name + '.csv', os.path.join(self.path,name + '.csv'))
 
     def AutosavePressAction(self):
+        '''
+        Manages start and stop of autosave.
+        '''
+
         if self.autosaveAction.isChecked():
             self.StartAutosave()
         else:
             self.StopAutosave()
 
     def StartAutosave(self):
+        '''
+        Starts autosave: the current beam props are saved in a .csv file after a specified time interval.
+        '''
 
         number,ok = QtGui.QInputDialog.getDouble(self.gui.win,"Start Autosave",\
             "Enter a time interval (in seconds):",decimals=3,min=0.001,value=1.000)
@@ -1092,6 +1149,9 @@ class App_Launcher(object):
         
 
     def StopAutosave(self):
+        '''
+        Stop autosave.
+        '''
 
         if self.autosavetimer.isActive():
         # if True:
@@ -1102,6 +1162,9 @@ class App_Launcher(object):
 
 
     def AutosaveBeamProps(self):
+        '''
+        The current beam props are saved in a .csv file after a specified time interval.
+        '''
 
         timeinterval = self.autosavetimer.interval()/1000.
 
@@ -1132,16 +1195,25 @@ class App_Launcher(object):
             shutil.move(tempfile.name + '.csv', os.path.join(self.path,name + '.csv'))
 
     def NewDataAcquisitionSession(self):
+        '''
+        Starts a new file to save current beam props.
+        '''
 
         self.session += 1
 
     def NewDistanceSession(self):
+        '''
+        Starts a new file to save current beam props with distance stamp.
+        '''
 
         self.distancesession += 1
 
 
 
     def InitializeSettings(self):
+        '''
+        Initializes the settings menu.
+        '''
 
         saturationMenu = self.gui.settingsmenu.addMenu('Saturation')
         thresholdAction = QtGui.QAction('Threshold',saturationMenu)
@@ -1163,6 +1235,9 @@ class App_Launcher(object):
 
 
     def InitializeView(self):
+        '''
+        Initializes the View menu.
+        '''
 
         rotatemenu = self.gui.viewmenu.addMenu('Rotate View')
         clockwiseAction = QtGui.QAction('Clockwise',rotatemenu)
@@ -1190,6 +1265,9 @@ class App_Launcher(object):
 
 
     def AdjustScaling(self):
+        '''
+        Adjusts the scaling according to pixelsize.
+        '''
 
         oldmuperpxl = self.muperpxl
         number,ok = QtGui.QInputDialog.getDouble(self.gui.win,"Adjust Scaling","Enter the value for scaling in micrometer per pixel:",decimals=3)
@@ -1216,6 +1294,10 @@ class App_Launcher(object):
 
 
     def AdjustSaturationThreshold(self):
+        '''
+        Adjusts the saturation threshold (minimal number of pixel that has to be saturated 
+        before warning shows up).
+        '''
 
         number,ok = QtGui.QInputDialog.getInt(self.gui.win,"Adjust Saturation Threshold",\
             "Enter new minimal pixel number:",value=self.saturationthreshold)
@@ -1225,6 +1307,9 @@ class App_Launcher(object):
 
 
     def AdjustBufferSize(self):
+        '''
+        Changes the size of the data buffer
+        '''
 
         number,ok = QtGui.QInputDialog.getInt(self.gui.win,"Adjust Size of Data Buffer",\
             "Enter new length of data buffer (number of saved values):",value=self.databuffersize,min=10,max=10000000)
@@ -1242,6 +1327,9 @@ class App_Launcher(object):
             self.databuffer = newdatabuffer
 
     def ClearBuffer(self):
+        '''
+        Clears the databuffer.
+        '''
 
         self.databuffer = self.CreateDataBuffer()
         self.databufferfilling = 0
@@ -1281,7 +1369,6 @@ class App_Launcher(object):
         Searches all available supported cameras (of all supported types).
         Creates menu.
         Starts first available camera.
-        TODO: Adapt for multiple camera types
         '''
         # del self.camera
 
@@ -1414,7 +1501,6 @@ class App_Launcher(object):
     def RefreshCameras(self):
         '''
         Refreshes the camera list.
-        TODO: Adapt for multiple camera types
         '''
 
         if self.camera != None:
@@ -1550,6 +1636,10 @@ class App_Launcher(object):
 
 
     def InitializeSumFit(self):
+        '''
+        Initializes the fit using sum over ROI
+        '''
+
         self.gui.ui.maxbeforeRadio.setChecked(False)
         self.gui.ui.absmaxRadio.setChecked(False)
         self.gui.ui.selfmaxRadio.setChecked(False)
@@ -1561,6 +1651,10 @@ class App_Launcher(object):
 
 
     def InitializeLineFit(self):
+        '''
+        Initializes the fit using single line of ROI.
+        '''
+
         self.gui.ui.maxbeforeRadio.setCheckable(True)
         self.gui.ui.absmaxRadio.setCheckable(True)
         self.gui.ui.selfmaxRadio.setCheckable(True)
@@ -1571,16 +1665,27 @@ class App_Launcher(object):
         self.gui.hLinecut.show()
 
     def InitializeSelfLineFit(self):
+        '''
+        Initializes the line fit using self defined line.
+        '''
         self.gui.vLinecut.setMovable(True)
         self.gui.hLinecut.setMovable(True)
 
 
     def InitializeAutoLineFit(self):
+        '''
+        Initializes the line fit using automatically determined line line.
+        '''
+
         self.gui.vLinecut.setMovable(False)
         self.gui.hLinecut.setMovable(False)
 
 
     def CheckSaturationData(self,xdata,ydata):
+        '''
+        Checks if values in the fit data stem from saturated pixels and marks them.
+        '''
+
         if self.RealData:
             indices = np.argwhere(ydata>=self.saturationvalue)
             # xdatanew = np.delete(xdata,indices)
@@ -1700,6 +1805,9 @@ class App_Launcher(object):
 
 
     def updateexposuretime(self):
+        '''
+        Writes exposure time in config file when changed and updates GUI.
+        '''
 
         if self.RealData:
             self.camera.SetExposureTime(self.gui.ui.exposureSpin.value())
@@ -1709,6 +1817,9 @@ class App_Launcher(object):
 
 
     def updategainvalue(self):
+        '''
+        Writes gain value in config file when changed and updates GUI.
+        '''
 
         if self.RealData:
             self.camera.SetGainValue(self.gui.ui.gainSpin.value())
@@ -1718,6 +1829,9 @@ class App_Launcher(object):
 
 
     def updatecameraconfigfile(self):
+        '''
+        Updates the camera config file.
+        '''
 
         ExpoTime = self.camera.GetExposureTime()
         GainValue = self.camera.GetGainValue()
@@ -2026,6 +2140,10 @@ class App_Launcher(object):
 
 
     def timeplotampchanged(self):
+        '''
+        Initializes timeplot of amplitude with zoom state.
+        '''
+
         if self.gui.ui.ampRadio.isChecked():
             if self.amprange != None:
                 self.gui.timeplot.setRange(rect=self.amprange)
@@ -2041,6 +2159,10 @@ class App_Launcher(object):
 
 
     def timeplotposhorchanged(self):
+        '''
+        Initializes timeplot of horizontal position with zoom state.
+        '''
+
         if self.gui.ui.poshorRadio.isChecked():
             if self.poshorrange != None:
                 self.gui.timeplot.setRange(rect=self.poshorrange)
@@ -2056,6 +2178,10 @@ class App_Launcher(object):
 
 
     def timeplotposvertchanged(self):
+        '''
+        Initializes timeplot of vertical position with zoom state.
+        '''
+
         if self.gui.ui.posvertRadio.isChecked():
             if self.posvertrange != None:
                 self.gui.timeplot.setRange(rect=self.posvertrange)
@@ -2071,6 +2197,10 @@ class App_Launcher(object):
 
 
     def timeplotwaisthorchanged(self):
+        '''
+        Initializes timeplot of horizontal waist with zoom state.
+        '''
+
         if self.gui.ui.waisthorRadio.isChecked():
             if self.waisthorrange != None:
                 self.gui.timeplot.setRange(rect=self.waisthorrange)
@@ -2086,6 +2216,10 @@ class App_Launcher(object):
 
 
     def timeplotwaistvertchanged(self):
+        '''
+        Initializes timeplot of vertical waist with zoom state.
+        '''
+
         if self.gui.ui.waistvertRadio.isChecked():
             if self.waistvertrange != None:
                 self.gui.timeplot.setRange(rect=self.waistvertrange)
@@ -2101,6 +2235,10 @@ class App_Launcher(object):
 
 
     def timeplotdistchanged(self):
+        '''
+        Initializes timeplot of distance from ref beam to beam with zoom state.
+        '''
+
         if self.gui.ui.distRadio.isChecked():
             if self.distrange != None:
                 self.gui.timeplot.setRange(rect=self.distrange)
@@ -2220,7 +2358,9 @@ class App_Launcher(object):
         # roi.stateChanged()
 
     def autoadjustroi(self):
-
+        '''
+        Automatically adjusts ROI size to 4 times beam waist.
+        '''
 
         waistx = self.databuffer[5,-1]
         waisty = self.databuffer[6,-1]

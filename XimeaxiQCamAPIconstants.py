@@ -1,4 +1,4 @@
-
+'''Defines constants used by XimeaxiQCamAPI.py'''
 
 ###ENUM CONSTANTS
 XI_BINNING  = 0

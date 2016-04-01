@@ -35,6 +35,7 @@ from ctypes import *
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
+import platform
 
 
 '''Enum containing information about output image format'''
@@ -159,11 +160,19 @@ class CameraTypeSpecific_API(Camera_API):
     '''Functions for the Ximea xiQ Camera.'''
 
 
-    def __init__(self, dllPath='xiapi64.dll'):
+    def __init__(self):
 
         super(CameraTypeSpecific_API,self).__init__()
 
         # Connect to library
+        if platform.architecture()[0] == '64bit':
+            dllPath = 'xiapi64.dll'
+        elif platform.architecture()[0] == '32bit':
+            dllPath = 'xiapi32.dll'
+
+        else:
+            print "ERROR - loading .dll according to platform architecture failed!"
+
         self.dll = cdll.LoadLibrary(dllPath)
 
         # Variables herited from Camera_API
@@ -191,6 +200,9 @@ class CameraTypeSpecific_API(Camera_API):
 
 
     def GetErrorInfo(self,errornum=0):
+        '''
+        Get error information.
+        '''
 
     	if errornum > 0:
     		print error_codes[errornum]
@@ -201,6 +213,9 @@ class CameraTypeSpecific_API(Camera_API):
 
 
     def GetNumberCams(self):
+        '''
+        Get the number of cameras.
+        '''
 
     	numbercams = c_uint32(0)
 
@@ -244,6 +259,9 @@ class CameraTypeSpecific_API(Camera_API):
 
 
     def OpenCamera(self):
+        '''
+        Opens camera.
+        '''
 
     	camid =c_ulong(self.CamIndex)
     	
@@ -253,6 +271,9 @@ class CameraTypeSpecific_API(Camera_API):
 
 
     def CloseCamera(self):
+        '''
+        Closes camera.
+        '''
 
     	self.GetErrorInfo(self.dll.xiCloseDevice(self.handle))
 
@@ -260,6 +281,9 @@ class CameraTypeSpecific_API(Camera_API):
 
 
     def StartAcquisition(self):
+        '''
+        Starts acquisition.
+        '''
 
         self.imagecontainer.size = SIZE_XI_IMG_V2
         self.imagecontainer.bp = None
@@ -274,6 +298,9 @@ class CameraTypeSpecific_API(Camera_API):
 
 
     def StopAcquisition(self):
+        '''
+        Stops acquisition.
+        '''
 
         self.GetErrorInfo(self.dll.xiStopAcquisition(self.handle))
 
@@ -283,6 +310,9 @@ class CameraTypeSpecific_API(Camera_API):
 
 
     def GetDeviceName(self):
+        '''
+        Get the device name.
+        '''
 
     	inf2 =create_string_buffer(512)
     	stringsize = c_ulong()

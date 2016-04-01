@@ -78,6 +78,9 @@ def FitGaussian(data,xdata=None,usesplit=False,useslice=False,meansize=5,critspl
     #     return arrs, cutoff
 
     def eraseinvalidvalues(ydata,xdata,thresholdval=-1):
+        '''
+        Erases invalid values (saturated pixels).
+        '''
 
         indices = np.argwhere(ydata<=thresholdval)
         xdatanew = np.delete(xdata,indices)
@@ -87,6 +90,9 @@ def FitGaussian(data,xdata=None,usesplit=False,useslice=False,meansize=5,critspl
 
 
     def split(arr,xarr,size):
+        '''
+        Takes mean over -size- values, takes saturated pixel into account.
+        '''
 
         length = arr.size
         cutoff = length % size
@@ -124,6 +130,9 @@ def FitGaussian(data,xdata=None,usesplit=False,useslice=False,meansize=5,critspl
         return newdatalist,newxdatalist
 
     def slicedata(arr,xarr,critslicevalue=100):
+        '''
+        Only takes out some values to do the fit.
+        '''
 
         data, xdata = eraseinvalidvalues(arr,xarr)
         slicenum = int(data.size/critslicevalue)
@@ -135,15 +144,6 @@ def FitGaussian(data,xdata=None,usesplit=False,useslice=False,meansize=5,critspl
             xdata = xdata[mask]
 
         return data, xdata
-
-
-
-
-
-
-
-
-
 
 
     # x = np.arange(data.size)

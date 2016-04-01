@@ -51,7 +51,7 @@ class Ui_Form(object):
         # extractAction.setStatusTip('Leave The App')
         # extractAction.triggered.connect(QtGui.qApp.quit)
 
-        '''Set up the menu bar'''
+        # '''Set up the menu bar'''
         # self.mainMenu = QtGui.QMenuBar(Form)
         # self.mainMenu.setNativeMenuBar(False)
         # fileMenu = self.mainMenu.addMenu('&amp;File')
@@ -217,6 +217,7 @@ class Ui_Form(object):
         '''Defines the buttons for the method for select data at peak fit'''
         self.plotselectedmethodgroup = QtGui.QButtonGroup(Form)
 
+        '''Defines the max before radio button'''
         self.maxbeforeRadio = QtGui.QRadioButton(Form)
         # if self.fitline.isChecked():
         #     self.maxbeforeRadio.setChecked(True)
@@ -224,16 +225,19 @@ class Ui_Form(object):
         self.maxbeforeRadio.setObjectName(_fromUtf8("maxbeforeRadio"))
         self.gridLayout.addWidget(self.maxbeforeRadio, 5, 4, 1, 1)
 
+        '''Defines the abs max radio button'''
         self.absmaxRadio = QtGui.QRadioButton(Form)
         self.absmaxRadio.setChecked(True)
         self.absmaxRadio.setObjectName(_fromUtf8("absmaxRadio"))
         self.gridLayout.addWidget(self.absmaxRadio, 6, 4, 1, 1)
         # self.absmaxRadio.setCheckable(False)
 
+        '''Defines the self max radio button'''
         self.selfmaxRadio = QtGui.QRadioButton(Form)
         self.selfmaxRadio.setObjectName(_fromUtf8("selfmaxRadio"))
         self.gridLayout.addWidget(self.selfmaxRadio, 7, 4, 1, 1)
 
+        '''Adds buttons to group'''
         self.plotselectedmethodgroup.addButton(self.maxbeforeRadio)
         self.plotselectedmethodgroup.addButton(self.absmaxRadio)
         self.plotselectedmethodgroup.addButton(self.selfmaxRadio)
