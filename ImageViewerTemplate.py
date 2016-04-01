@@ -200,8 +200,7 @@ class Ui_Form(object):
         self.fitsum.setObjectName(_fromUtf8("fitsum"))
         self.gridLayout.addWidget(self.fitsum, 3, 4, 1, 1)
         self.fitsum.setCheckable(True)
-        self.fitsum.setToolTip('For fitting a gaussian the vertically/horizontally summed up data of \
-            the ROI is used')
+        self.fitsum.setToolTip('For fitting a gaussian the vertically/horizontally summed up data of the ROI is used')
         self.fitsum.setChecked(True)
 
         '''Defines the 'Select Data at Peak' push button'''
@@ -209,8 +208,7 @@ class Ui_Form(object):
         self.fitline.setObjectName(_fromUtf8("fitline"))
         self.gridLayout.addWidget(self.fitline, 4, 4, 1, 1)
         self.fitline.setCheckable(True)
-        self.fitline.setToolTip('For fitting a gaussian the vertical/horizontal line of data \
-            at the peak is selec')
+        self.fitline.setToolTip('For fitting a gaussian the vertical/horizontal line of data at the peak is selec')
 
         self.fitoptgroup.addButton(self.fitsum)
         self.fitoptgroup.addButton(self.fitline)
