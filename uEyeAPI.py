@@ -1473,7 +1473,7 @@ class CameraAPI:
 
     def StartCam(self):
         self.ImageArray = np.zeros((self.height,self.width), dtype = np.uint16)
-        err, my_address, my_id = self.is_SetAllocatedImageMem(self.ImageArray, self.height, self.width)
+        err, my_address, my_id = self.is_SetAllocatedImageMem(self.ImageArray)
         self.is_SetImageMem(my_address, my_id)
 
     def StopCam(self):
