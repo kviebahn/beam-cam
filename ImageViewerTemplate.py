@@ -264,6 +264,12 @@ class Ui_Form(object):
         self.hold.setCheckable(True)
         self.hold.setToolTip('Pause the live view')
         # self.hold.setChecked(False)
+        
+        '''Analysis combo'''
+        self.anaCombo = QtGui.QComboBox()
+        self.anaCombo.setObjectName(_fromUtf8('analysis type'))
+        self.gridLayout.addWidget(self.anaCombo, 3, 4, 1, 1)
+        self.anaCombo.setToolTip('choose a analysis type')
 
 
 
