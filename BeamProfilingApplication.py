@@ -27,9 +27,9 @@ Please see the README.md file for a copy of the GNU General Public License, or o
 
 '''!!COMMENT OUT THE OPTIONS THAT YOU DO NOT WANT!!'''
 
-'''Using both camera types (VRmagic and Ximea)'''
-cameratypes = ['VRmagic USB','Ximea xiQ']
-cameraapinames = ['VRmagicUsbCamAPI','XimeaxiQCamAPI']
+# '''Using both camera types (VRmagic and Ximea)'''
+# cameratypes = ['VRmagic USB','Ximea xiQ']
+# cameraapinames = ['VRmagicUsbCamAPI','XimeaxiQCamAPI']
 
 
 # '''Using VRmagic cameras only'''
@@ -42,9 +42,9 @@ cameraapinames = ['VRmagicUsbCamAPI','XimeaxiQCamAPI']
 # cameraapinames = ['XimeaxiQCamAPI']
 
 
-# '''Only use demo'''
-# cameratypes = []
-# cameraapinames = []
+'''Only use demo'''
+cameratypes = []
+cameraapinames = []
 
 '''-----------------------------------------------'''
 
