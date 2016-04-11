@@ -31,8 +31,15 @@ import ctypes as ct
 import os, sys
 import numpy as np
 import time
-
+import platform
 import matplotlib.pyplot as plt
+
+
+
+from CameraAPI import Camera_API
+
+
+
 
 # ----------------------------------------------------------------------------
 # Error codes
@@ -385,41 +392,7 @@ SensorTypeDict = {
 }
 
 
-## ----------------------------------------------------------------------------
-## common definitions (currently not used)
-## ----------------------------------------------------------------------------
-CommonDict={
-    0:'IS_OFF             ',
-    1:'IS_ON              ',
-    -1:'IS_IGNORE_PARAMETER'
-}
 
-
-#// ----------------------------------------------------------------------------
-#// Timing (not implemented yet)
-#// ----------------------------------------------------------------------------
-TimingDict={
-    #// Pixelclock
-    0x8000:'IS_GET_PIXEL_CLOCK      ',
-    0x8001:'IS_GET_DEFAULT_PIXEL_CLK',
-    0x8005:'IS_GET_PIXEL_CLOCK_INC  ',
-    #// Frame rate
-    0x8000:'IS_GET_FRAMERATE        ',
-    0x8001:'IS_GET_DEFAULT_FRAMERATE'
-}
-
-#/*!
-# * \brief Enumeration of commands of function is_PixelClock , \ref is_PixelClock.
-# */
-
-PixelClockDict = {
-	1:'IS_PIXELCLOCK_CMD_GET_NUMBER ' ,
-	2:'IS_PIXELCLOCK_CMD_GET_LIST   ' ,
-	3:'IS_PIXELCLOCK_CMD_GET_RANGE  ' ,
-	4:'IS_PIXELCLOCK_CMD_GET_DEFAULT' ,
-	5:'IS_PIXELCLOCK_CMD_GET        ' , 
-	6:'IS_PIXELCLOCK_CMD_SET        ' 
-}
 #// ----------------------------------------------------------------------------
 #// Gain definitions
 #// ----------------------------------------------------------------------------
@@ -462,144 +435,6 @@ GainFactorDict = {
     0x800f:'IS_INQUIRE_BLUE_GAIN_FACTOR      '
 }
 
-#// ----------------------------------------------------------------------------
-#// Global Shutter definitions (not implemented yet)
-#// ----------------------------------------------------------------------------
-GlobalShutterDict = {
-    0x0001:'IS_SET_GLOBAL_SHUTTER_ON       ',
-    0x0000:'IS_SET_GLOBAL_SHUTTER_OFF      ',
-    0x0010:'IS_GET_GLOBAL_SHUTTER          ',
-    0x0020:'IS_GET_SUPPORTED_GLOBAL_SHUTTER'
-}
-
-#// ----------------------------------------------------------------------------
-#// Image parameters (not implemented yet)
-#// ----------------------------------------------------------------------------
-#
-#// Saturation
-ImageParamDict = {
-    0x8000:'IS_GET_SATURATION_U    ',
-    0     :'IS_MIN_SATURATION_U    ',     
-    200   :'IS_MAX_SATURATION_U    ',
-    100   :'IS_DEFAULT_SATURATION_U',
-    0x8001:'IS_GET_SATURATION_V    ',
-    0     :'IS_MIN_SATURATION_V    ',
-    200   :'IS_MAX_SATURATION_V    ',
-    100   :'IS_DEFAULT_SATURATION_V'
-}
-
-#// ----------------------------------------------------------------------------
-#// Auto Control Parameter (not implemented yet)
-#// ----------------------------------------------------------------------------
-AutoControlParamDict = {
-    0x8800:'IS_SET_ENABLE_AUTO_GAIN                    ',
-    0x8801:'IS_GET_ENABLE_AUTO_GAIN                    ',
-    0x8802:'IS_SET_ENABLE_AUTO_SHUTTER                 ',
-    0x8803:'IS_GET_ENABLE_AUTO_SHUTTER                 ',
-    0x8804:'IS_SET_ENABLE_AUTO_WHITEBALANCE            ',
-    0x8805:'IS_GET_ENABLE_AUTO_WHITEBALANCE            ',
-    0x8806:'IS_SET_ENABLE_AUTO_FRAMERATE               ',
-    0x8807:'IS_GET_ENABLE_AUTO_FRAMERATE               ',
-    0x8808:'IS_SET_ENABLE_AUTO_SENSOR_GAIN             ',
-    0x8809:'IS_GET_ENABLE_AUTO_SENSOR_GAIN             ',
-    0x8810:'IS_SET_ENABLE_AUTO_SENSOR_SHUTTER          ',
-    0x8811:'IS_GET_ENABLE_AUTO_SENSOR_SHUTTER          ',
-    0x8812:'IS_SET_ENABLE_AUTO_SENSOR_GAIN_SHUTTER     ',
-    0x8813:'IS_GET_ENABLE_AUTO_SENSOR_GAIN_SHUTTER     ',
-    0x8814:'IS_SET_ENABLE_AUTO_SENSOR_FRAMERATE        ',
-    0x8815:'IS_GET_ENABLE_AUTO_SENSOR_FRAMERATE        ',
-    0x8816:'IS_SET_ENABLE_AUTO_SENSOR_WHITEBALANCE     ',
-    0x8817:'IS_GET_ENABLE_AUTO_SENSOR_WHITEBALANCE     ',
-    0x8000:'IS_SET_AUTO_REFERENCE                      ',
-    0x8001:'IS_GET_AUTO_REFERENCE                      ',
-    0x8002:'IS_SET_AUTO_GAIN_MAX                       ',
-    0x8003:'IS_GET_AUTO_GAIN_MAX                       ',
-    0x8004:'IS_SET_AUTO_SHUTTER_MAX                    ',
-    0x8005:'IS_GET_AUTO_SHUTTER_MAX                    ',
-    0x8006:'IS_SET_AUTO_SPEED                          ',
-    0x8007:'IS_GET_AUTO_SPEED                          ',
-    0x8008:'IS_SET_AUTO_WB_OFFSET                      ',
-    0x8009:'IS_GET_AUTO_WB_OFFSET                      ',
-    0x800A:'IS_SET_AUTO_WB_GAIN_RANGE                  ',
-    0x800B:'IS_GET_AUTO_WB_GAIN_RANGE                  ',
-    0x800C:'IS_SET_AUTO_WB_SPEED                       ',
-    0x800D:'IS_GET_AUTO_WB_SPEED                       ',
-    0x800E:'IS_SET_AUTO_WB_ONCE                        ',
-    0x800F:'IS_GET_AUTO_WB_ONCE                        ',
-    0x8010:'IS_SET_AUTO_BRIGHTNESS_ONCE                ',
-    0x8011:'IS_GET_AUTO_BRIGHTNESS_ONCE                ',
-    0x8012:'IS_SET_AUTO_HYSTERESIS                     ',
-    0x8013:'IS_GET_AUTO_HYSTERESIS                     ',
-    0x8014:'IS_GET_AUTO_HYSTERESIS_RANGE               ',
-    0x8015:'IS_SET_AUTO_WB_HYSTERESIS                  ',
-    0x8016:'IS_GET_AUTO_WB_HYSTERESIS                  ',
-    0x8017:'IS_GET_AUTO_WB_HYSTERESIS_RANGE            ',
-    0x8018:'IS_SET_AUTO_SKIPFRAMES                     ',
-    0x8019:'IS_GET_AUTO_SKIPFRAMES                     ',
-    0x801A:'IS_GET_AUTO_SKIPFRAMES_RANGE               ',
-    0x801B:'IS_SET_AUTO_WB_SKIPFRAMES                  ',
-    0x801C:'IS_GET_AUTO_WB_SKIPFRAMES                  ',
-    0x801D:'IS_GET_AUTO_WB_SKIPFRAMES_RANGE            ',
-    0x801E:'IS_SET_SENS_AUTO_SHUTTER_PHOTOM            ',
-    0x801F:'IS_SET_SENS_AUTO_GAIN_PHOTOM               ',
-    0x8020:'IS_GET_SENS_AUTO_SHUTTER_PHOTOM            ',
-    0x8021:'IS_GET_SENS_AUTO_GAIN_PHOTOM               ',
-    0x8022:'IS_GET_SENS_AUTO_SHUTTER_PHOTOM_DEF        ',
-    0x8023:'IS_GET_SENS_AUTO_GAIN_PHOTOM_DEF           ',
-    0x8024:'IS_SET_SENS_AUTO_CONTRAST_CORRECTION       ',
-    0x8025:'IS_GET_SENS_AUTO_CONTRAST_CORRECTION       ',
-    0x8026:'IS_GET_SENS_AUTO_CONTRAST_CORRECTION_RANGE ',
-    0x8027:'IS_GET_SENS_AUTO_CONTRAST_CORRECTION_INC   ',
-    0x8028:'IS_GET_SENS_AUTO_CONTRAST_CORRECTION_DEF   ',
-    0x8029:'IS_SET_SENS_AUTO_CONTRAST_FDT_AOI_ENABLE   ',
-    0x8030:'IS_GET_SENS_AUTO_CONTRAST_FDT_AOI_ENABLE   ',
-    0x8031:'IS_SET_SENS_AUTO_BACKLIGHT_COMP            ',
-    0x8032:'IS_GET_SENS_AUTO_BACKLIGHT_COMP            ',
-    0x8033:'IS_GET_SENS_AUTO_BACKLIGHT_COMP_RANGE      ',
-    0x8034:'IS_GET_SENS_AUTO_BACKLIGHT_COMP_INC        ',
-    0x8035:'IS_GET_SENS_AUTO_BACKLIGHT_COMP_DEF        ',
-    0x8036:'IS_SET_ANTI_FLICKER_MODE                   ',
-    0x8037:'IS_GET_ANTI_FLICKER_MODE                   ',
-    0x8038:'IS_GET_ANTI_FLICKER_MODE_DEF               ',
-    0x8039:'IS_GET_AUTO_REFERENCE_DEF                  ',
-    0x803A:'IS_GET_AUTO_WB_OFFSET_DEF                  ',
-    0x803B:'IS_GET_AUTO_WB_OFFSET_MIN                  ',
-    0x803C:'IS_GET_AUTO_WB_OFFSET_MAX                  '
-}
-
-#// ----------------------------------------------------------------------------
-#// Auto Control definitions  (not implemented yet)
-#// ----------------------------------------------------------------------------
-AutoControlDict = {
-    0:'IS_MIN_AUTO_BRIGHT_REFERENCE    ',
-    255:'IS_MAX_AUTO_BRIGHT_REFERENCE    ',
-    128:'IS_DEFAULT_AUTO_BRIGHT_REFERENCE',
-    0:'IS_MIN_AUTO_SPEED               ',
-    100:'IS_MAX_AUTO_SPEED               ',
-    50:'IS_DEFAULT_AUTO_SPEED           ',
-    0:'IS_DEFAULT_AUTO_WB_OFFSET       ',
-    -50:'IS_MIN_AUTO_WB_OFFSET           ',
-    50:'IS_MAX_AUTO_WB_OFFSET           ',
-    50:'IS_DEFAULT_AUTO_WB_SPEED        ',
-    0:'IS_MIN_AUTO_WB_SPEED            ',
-    100:'IS_MAX_AUTO_WB_SPEED            ',
-    0:'IS_MIN_AUTO_WB_REFERENCE        ',
-    255:'IS_MAX_AUTO_WB_REFERENCE        '
-}
-
-
-#// ----------------------------------------------------------------------------
-#// Display mode selectors (unclear)
-#// ----------------------------------------------------------------------------
-DisplayModeDict = {
-    0x8000:'IS_GET_DISPLAY_MODE',
-    1     :'IS_SET_DM_DIB      ',
-    4     :'IS_SET_DM_DIRECT3D ',
-    8     :'IS_SET_DM_OPENGL   ',
-    0x800 :'IS_SET_DM_MONO     ',
-    0x1000:'IS_SET_DM_BAYER    ',
-    0x4000:'IS_SET_DM_YCBCR    '
-}
 
 
 #// ----------------------------------------------------------------------------
@@ -692,103 +527,6 @@ CameraTypeDictFlip = {
 }
 CameraTypeDict = flipDict(CameraTypeDictFlip)
 
-#// ----------------------------------------------------------------------------
-#// Readable operation system defines (currently not used)
-#// ----------------------------------------------------------------------------
-OperationSystemDictFlip = {
-    'IS_OS_UNDETERMINED     ':             0,
-    'IS_OS_WIN95            ':             1,
-    'IS_OS_WINNT40          ':             2,
-    'IS_OS_WIN98            ':             3,
-    'IS_OS_WIN2000          ':             4,
-    'IS_OS_WINXP            ':             5,
-    'IS_OS_WINME            ':             6,
-    'IS_OS_WINNET           ':             7,
-    'IS_OS_WINSERVER2003    ':             8,
-    'IS_OS_WINVISTA         ':             9,
-    'IS_OS_LINUX24          ':             10,
-    'IS_OS_LINUX26          ':             11,
-    'IS_OS_WIN7             ':             12,
-    'IS_OS_WIN8             ':             13,
-    'IS_OS_WIN8SERVER       ':             14,
-    'IS_OS_GREATER_THAN_WIN8':             15
-}
-OperationSystemDict = flipDict(OperationSystemDictFlip)
-
-#// ----------------------------------------------------------------------------
-#// Bus speed (not implemented yet)
-#// ----------------------------------------------------------------------------
-BusSpeedDictFlip = {
-    'IS_USB_10           ':         0x0001, # //  1,5 Mb/s
-    'IS_USB_11           ':         0x0002, # //   12 Mb/s
-    'IS_USB_20           ':         0x0004, # //  480 Mb/s
-    'IS_USB_30           ':         0x0008, # // 4000 Mb/s
-    'IS_ETHERNET_10      ':         0x0080, # //   10 Mb/s
-    'IS_ETHERNET_100     ':         0x0100, # //  100 Mb/s
-    'IS_ETHERNET_1000    ':         0x0200, # // 1000 Mb/s
-    'IS_ETHERNET_10000   ':         0x0400, # //10000 Mb/s
-    'IS_USB_LOW_SPEED    ':         1,
-    'IS_USB_FULL_SPEED   ':         12,
-    'IS_USB_HIGH_SPEED   ':         480,
-    'IS_USB_SUPER_SPEED  ':         4000,
-    'IS_ETHERNET_10Base  ':         10,
-    'IS_ETHERNET_100Base ':         100,
-    'IS_ETHERNET_1000Base':         1000,
-    'IS_ETHERNET_10GBase ':         10000
-}
-BusSpeedDict = flipDict(BusSpeedDictFlip)
-
-#// ----------------------------------------------------------------------------
-#// Test images (not implemented yet)
-#// ----------------------------------------------------------------------------
-TestImageDictFlip = {
-    'IS_TEST_IMAGE_NONE                      ':    0x00000000,
-    'IS_TEST_IMAGE_WHITE                     ':    0x00000001,
-    'IS_TEST_IMAGE_BLACK                     ':    0x00000002,
-    'IS_TEST_IMAGE_HORIZONTAL_GREYSCALE      ':    0x00000004,
-    'IS_TEST_IMAGE_VERTICAL_GREYSCALE        ':    0x00000008,
-    'IS_TEST_IMAGE_DIAGONAL_GREYSCALE        ':    0x00000010,
-    'IS_TEST_IMAGE_WEDGE_GRAY                ':    0x00000020,
-    'IS_TEST_IMAGE_WEDGE_COLOR               ':    0x00000040,
-    'IS_TEST_IMAGE_ANIMATED_WEDGE_GRAY       ':    0x00000080,
-    'IS_TEST_IMAGE_ANIMATED_WEDGE_COLOR      ':    0x00000100,
-    'IS_TEST_IMAGE_MONO_BARS                 ':    0x00000200,
-    'IS_TEST_IMAGE_COLOR_BARS1               ':    0x00000400,
-    'IS_TEST_IMAGE_COLOR_BARS2               ':    0x00000800,
-    'IS_TEST_IMAGE_GREYSCALE1                ':    0x00001000,
-    'IS_TEST_IMAGE_GREY_AND_COLOR_BARS       ':    0x00002000,
-    'IS_TEST_IMAGE_MOVING_GREY_AND_COLOR_BARS':    0x00004000,
-    'IS_TEST_IMAGE_ANIMATED_LINE             ':    0x00008000,
-    'IS_TEST_IMAGE_ALTERNATE_PATTERN         ':    0x00010000,
-    'IS_TEST_IMAGE_VARIABLE_GREY             ':    0x00020000,
-    'IS_TEST_IMAGE_MONOCHROME_HORIZONTAL_BARS':    0x00040000,
-    'IS_TEST_IMAGE_MONOCHROME_VERTICAL_BARS  ':    0x00080000,
-    'IS_TEST_IMAGE_CURSOR_H                  ':    0x00100000,
-    'IS_TEST_IMAGE_CURSOR_V                  ':    0x00200000,
-    'IS_TEST_IMAGE_COLDPIXEL_GRID            ':    0x00400000,
-    'IS_TEST_IMAGE_HOTPIXEL_GRID             ':    0x00800000,
-    'IS_TEST_IMAGE_VARIABLE_RED_PART         ':    0x01000000,
-    'IS_TEST_IMAGE_VARIABLE_GREEN_PART       ':    0x02000000,
-    'IS_TEST_IMAGE_VARIABLE_BLUE_PART        ':    0x04000000,
-    'IS_TEST_IMAGE_SHADING_IMAGE             ':    0x08000000,
-    'IS_TEST_IMAGE_WEDGE_GRAY_SENSOR         ':    0x10000000,
-    'IS_TEST_IMAGE_ANIMATED_WEDGE_GRAY_SENSOR':    0x20000000,
-    'IS_TEST_IMAGE_RAMPING_PATTERN           ':    0x40000000,
-    'IS_TEST_IMAGE_CHESS_PATTERN             ':    0x80000000
-}
-TestImageDict = flipDict(TestImageDictFlip)
-
-
-#// ----------------------------------------------------------------------------
-#// Sequence flags (not implemented yet)
-#// ----------------------------------------------------------------------------
-SequenceFlagDict = {
-    0x8002: 'IS_LOCK_LAST_BUFFER        ',
-    0x8004: 'IS_GET_ALLOC_ID_OF_THIS_BUF',
-    0x8008: 'IS_GET_ALLOC_ID_OF_LAST_BUF',
-    0x8000: 'IS_USE_ALLOC_ID            ',
-    0xC000: 'IS_USE_CURRENT_IMG_SIZE    '
-}
 
 
 #typedef enum E_EXPOSURE_CMD
@@ -987,29 +725,56 @@ E_CAPTURE_STATUS_CMD = {
 #########################################################################################################################################################################################################################
 #########################################################################################################################################################################################################################
 
-class CameraAPI:
-    """Translates the uEye driver from c to python"""
+class CameraTypeSpecific_API(Camera_API):
+    """Translates the uEye driver from c to python and replaces empty methods in CameraAPI.py by the uEye-specific functions."""
+
 
     def __init__(self):
-        self.dllFolder = os.path.abspath(os.path.relpath('drivers'))
-        if (sys.maxsize > 2**32):
-            self.dllPath = os.path.join(self.dllFolder, 'ueye_api_64.dll')
-        else:
-            self.dllPath = os.path.join(self.dllFolder, 'ueye_api.dll')
-        self.dll = ct.cdll.LoadLibrary(self.dllPath)    
+
+        super(CameraTypeSpecific_API,self).__init__()
         
-        #This variable is the camera handle, which is passed in almost every function.
-        self.hCam = 0
-	self.width = 0
-	self.height = 0
-        self.key = 0
-        self.keytest = 0
+	self.dllFolder = os.path.abspath(os.path.relpath('drivers'))
+        if platform.architecture()[0] == '64bit':
+            self.dllPath = os.path.join(self.dllFolder, 'ueye_api_64.dll')
+        elif platform.architecture()[0] == '32bit':
+            self.dllPath = os.path.join(self.dllFolder, 'ueye_api.dll')
+        else:
+            print "ERROR - loading .dll according to platform architecture failed!"
+        
+	self.dll = ct.cdll.LoadLibrary(self.dllPath)    
+        
+	# Variables inherited from Camera_API
+        self.imageArray = None
+
+        self.cameraList = None
+
+        self.CamIndex = None
+
+        self.imageSize = None
+        self.saturationValue = None
+        self.exposureTime = None
+        self.exposureRange = None
+        self.exposureSteps = None
+        self.gainValue = None
+        self.gainRange = None
+        self.gainSteps = None
+        
+        #Own variables
+	# This is the camera handle:
+	self.hCam = 0
+	# The array where the image is going to stored in.
         self.ImageArray = np.array([])
-        self.CamIndex = ct.c_int(0)
+
+
+
+##########################################################
+### original uEye methods (just translated form c to python)
+##########################################################
+
+
 
 #  IDSEXP   is_GetNumberOfDevices     (void);
 
-#  IDSEXP   is_FreezeVideo            (HIDS hCam, INT Wait);
     def is_FreezeVideo(self, Wait):
         '''
         Wait = 0 is IS_DONT_WAIT
@@ -1018,44 +783,30 @@ class CameraAPI:
         print 'is_FreezeVideo: %s' % (EC[err])
         return err
 
-#  IDSEXP   is_CaptureVideo           (HIDS hCam, INT Wait);
     def is_CaptureVideo(self, wait):
         '''wait is time in ms(?)'''
         err = self.dll.is_FreezeVideo(UINT(self.hCam), INT(wait))
         #print 'is_CaptureVideo: %s' % (EC[err])
         return err
 
-#  IDSEXP   is_AllocImageMem          (HIDS hCam, INT width, INT height, INT bitspixel, char** ppcImgMem, int* pid);
-    def is_AllocImageMem(self, width = 1600, height = 1200, bitspixel = 16):
-        pcImgMem = (ct.POINTER(ct.c_char))()
-        idMem = ct.c_int()
-        pidMem = ct.pointer(idMem)
-        err = self.dll.is_AllocImageMem(UINT(self.hCam), INT(width), INT(height), INT(bitspixel), ct.byref(pcImgMem), pidMem)
-        # print 'idMem = %i' %(int(idMem.value))
-        # print 'cImgMem (starting address of image memory) = %s' % str(ppcImgMem.contents.contents) # this seems wrong to me (why is the starting address always the same?)
-        print 'is_AllocImageMem: %s' % (EC[err])
-        return err, pcImgMem, idMem.value # , ppcImgMem.contents, idMem.value
 
-#  IDSEXP   is_SetImageMem            (HIDS hCam, char* pcMem, int id);
     def is_SetImageMem(self, pcMem, idMem):
-        err = self.dll.is_SetImageMem(UINT(self.hCam), pcMem, ct.c_int(idMem))
-        print 'is_SetImageMem: %s' % (EC[err])
+        '''This method makes the allocated memory active.'''
+	err = self.dll.is_SetImageMem(UINT(self.hCam), pcMem, ct.c_int(idMem))
+        #print 'is_SetImageMem: %s' % (EC[err])
         return err
 
-#  IDSEXP   is_FreeImageMem           (HIDS hCam, char* pcMem, int id);
     def is_FreeImageMem(self, cMem, idMem):
         err = self.dll.is_FreeImageMem(UINT(self.hCam), cMem, ct.c_int(idMem))
         print 'is_FreeImageMem: %s' % (EC[err])
         return err
 
-#  IDSEXP   is_GetImageMem            (HIDS hCam, VOID** pMem);
     def is_GetImageMem(self, pcImgMem):
         err = self.dll.is_GetImageMem(UINT(self.hCam),ct.byref(pcImgMem))
         print 'is_GetImageMem: %s' % (pcImgMem)
         print 'is_GetImageMem: %s' % (EC[err])
         return err, pcImgMem
 
-#  IDSEXP   is_GetActiveImageMem      (HIDS hCam, char** ppcMem, int* pnID);
     def is_GetActiveImageMem(self, pcImgMem):
         idnMem = ct.c_int()
         pidnMem = ct.pointer(idnMem)
@@ -1065,7 +816,6 @@ class CameraAPI:
         print 'is_GetActiveImageMem: %s' % (EC[err])
         return err, pcImgMem, pidnMem.contents
 
-#  IDSEXP   is_InquireImageMem        (HIDS hCam, char* pcMem, int nID, int* pnX, int* pnY, int* pnBits, int* pnPitch);
     def is_InquireImageMem(self, pcMem, idMem):
         nX, nY, nBits, nPitch = ct.c_int(), ct.c_int(), ct.c_int(), ct.c_int()
         pnX, pnY, pnBits, pnPitch = ct.pointer(nX), ct.pointer(nY), ct.pointer(nBits), ct.pointer(nPitch)
@@ -1074,70 +824,34 @@ class CameraAPI:
         print 'is_InquireImageMem: %s' % (EC[err])
         return err, (pnX.contents.value, pnY.contents.value, pnBits.contents.value, pnPitch.contents.value)
 
-#  IDSEXP   is_SetAllocatedImageMem   (HIDS hCam, INT width, INT height, INT bitspixel, char* pcImgMem, int* pid);
-    def is_SetAllocatedImageMem(self, numpyArray, width = 1600, height = 1200, bitspixel = 16):
-        '''Allocates right amount of memory for numpyArray. Returns memory address (ctypes pointer) and image id (int).'''
-        pcMem = numpyArray.ctypes.data_as(ct.POINTER(ct.c_uint16))
+    def is_SetAllocatedImageMem(self, bitspixel = 16):
+        '''Allocates right amount of memory for a given numpyArray. self.imageArray is used to store the image data. Returns memory address (ctypes pointer) and image id (int).'''
+        width = self.imageSize[0]
+	height = self.imageSize[1]
+	#print width, height
+	self.imageArray = np.zeros((height, width), dtype = np.uint16)
+	numpyArray = self.imageArray
+	pcMem = numpyArray.ctypes.data_as(ct.POINTER(ct.c_uint16))
         pid = ct.pointer(ct.c_int())
         err = self.dll.is_SetAllocatedImageMem(UINT(self.hCam), ct.c_int(width), ct.c_int(height), ct.c_int(bitspixel), pcMem, pid)
         #print 'is_SetAllocatedImageMem: pcMem = %s' %(pcMem)
         #print 'is_SetAllocatedImageMem: pid = %s' %(pid.contents)        
-        print 'is_SetAllocatedImageMem: %s' % (EC[err])
+        #print 'is_SetAllocatedImageMem: %s' % (EC[err])
         return err, pcMem, pid.contents.value
 
-#  IDSEXP   is_CopyImageMem           (HIDS hCam, char* pcSource, int nID, char* pcDest);
-    def is_CopyImageMem(self, cSource, nID, cDest):
-        '''Copies image from cSource memory to cDest memory address.'''
-        err = self.dll.is_CopyImageMem(UINT(self.hCam), cSource, ct.c_int(nID), cDest)
-        print 'is_CopyImageMem: %s' % (EC[err]) 
-        return err
 
-
-# to be implemented:
-
-#  IDSEXP   is_AddToSequence          (HIDS hCam, char* pcMem, INT nID);
-#  IDSEXP   is_ClearSequence          (HIDS hCam);
-#  IDSEXP   is_GetActSeqBuf           (HIDS hCam, INT* pnNum, char** ppcMem, char** ppcMemLast);
-#  IDSEXP   is_LockSeqBuf             (HIDS hCam, INT nNum, char* pcMem);
-#  IDSEXP   is_UnlockSeqBuf           (HIDS hCam, INT nNum, char* pcMem);
-
-#IDSEXP   is_SetExternalTrigger     (HIDS hCam, INT nTriggerMode);
-    def is_SetExternalTrigger(self, nTriggerMode):
-    	err = self.dll.is_SetExternalTrigger(UINT(self.hCam), INT(nTriggerMode))
-	print 'is_SetExernalTrigger: %s' % (EC[err])
-	return err
-
-#  IDSEXP   is_SetErrorReport         (HIDS hCam, INT Mode);
     def is_SetErrorReport(self, Mode):
         '''
+	This function toggles an error dialogue box on/off.
         Mode = 0x8000 (= 32768) is an enquiry.
         '''
         err = self.dll.is_SetErrorReport(UINT(self.hCam), INT(Mode))
         if Mode == 0x8000:
             print 'is_SetErrorReport: %s' %(ErrorReportDict[err])
-            return err
         else:
             print 'is_SetErrorReport: %s' %(EC[err])
-            return err
+        return err
 
-#  IDSEXP   is_SetDisplayMode         (HIDS hCam, INT Mode);
-    def is_SetDisplayMode(self, Mode):
-        '''
-        Mode = 0x8000 is an enquiry.
-        '''
-        err = self.dll.is_SetDisplayMode(UINT(self.hCam), ct.c_int(Mode))
-        if Mode == 0x8000:
-            print 'is_SetDisplayMode: %s' % (DisplayModeDict[err])
-            return err, Mode
-        else:
-            print 'is_SetDisplayMode: %s' % (EC[err])
-            return err
-
-
-#  // Version information (not implemented yet)
-#  IDSEXP   is_GetDLLVersion          (void);
-
-#  IDSEXP is_InitCamera                  (HIDS* phCam, HWND hWnd);
     def is_InitCamera(self):
         'returns error and camera handle (= 1 by default)'
         CameraHandle = ct.c_uint32(1)
@@ -1145,16 +859,14 @@ class CameraAPI:
         # WindowHandle = ct.c_uint32(hWnd) # manual is unclear whether pointer is needed
         err = self.dll.is_InitCamera(phCam, None)#,None)
         self.hCam = phCam.contents.value
-        print 'is_InitCamera: %s' % (EC[err])
+        #print 'is_InitCamera: %s' % (EC[err])
         return err, phCam.contents.value
 
-#  IDSEXP is_ExitCamera                  (HIDS hCam);
     def is_ExitCamera(self):
         err = self.dll.is_ExitCamera(UINT(self.hCam))
-        print 'is_ExitCamera: %s' % (EC[err])
-        return err
+        #print 'is_ExitCamera: %s' % (EC[err])
+	return err
 
-#  IDSEXP is_GetCameraInfo               (HIDS hCam, PCAMINFO pInfo);
     def is_GetCameraInfo(self):
         pInfo = ct.pointer(struct_BOARDINFO())
         err = self.dll.is_GetCameraInfo(UINT(self.hCam), pInfo)
@@ -1192,73 +904,13 @@ class CameraAPI:
         return err, p_stat.contents.value
 
 
-# to be implemented:
-
-#  // Set/Get Frame rate
-#  IDSEXP is_GetFrameTimeRange           (HIDS hCam, double *min, double *max, double *intervall);
-
-
-#  IDSEXP is_SetFrameRate                (HIDS hCam, double FPS, double* newFPS);
-    def is_SetFrameRate(self, FPS):
-    	dblFPS = ct.c_double(FPS)
-	pnewFPS = ct.pointer(ct.c_double())
-	err = self.dll.is_SetFrameRate(UINT(self.hCam), dblFPS, pnewFPS)
-	print 'is_SetFrameRate: FPS = %f' % (pnewFPS.contents.value)
-	return err, pnewFPS.contents.value
-
-#  // Get frames per second
-#  IDSEXP is_GetFramesPerSecond          (HIDS hCam, double *dblFPS);
-    def is_GetFramesPerSecond(self):
-    	dblFPS = ct.pointer(ct.c_double())
-	err = self.dll.is_GetFramesPerSecond(UINT(self.hCam), dblFPS)
-	print 'is_GetFramesPerSecond: %f' % (dblFPS.contents.value)
-	return err, dblFPS.contents.value
-
-#  // Get Sensor info
-#  IDSEXP is_GetSensorInfo               (HIDS hCam, PSENSORINFO pInfo);
     def is_GetSensorInfo(self):
         pInfo = ct.pointer(struct_SENSORINFO())
         err = self.dll.is_GetSensorInfo(UINT(self.hCam), pInfo)
-        print 'is_GetSensorInfo: %s' % (EC[err])
-        for field_name, field_type in pInfo.contents._fields_:
-            print field_name, getattr(pInfo.contents, field_name)
+        #print 'is_GetSensorInfo: %s' % (EC[err])
+        #for field_name, field_type in pInfo.contents._fields_:
+        #    print field_name, getattr(pInfo.contents, field_name)
         return err, pInfo.contents
-
-
-#  // Get RevisionInfo
-#  IDSEXP is_GetRevisionInfo             (HIDS hCam, PREVISIONINFO prevInfo);
-
-# This function is obsolete:
-#  IDSEXP is_SetHardwareGain             (HIDS hCam, INT nMaster, INT nRed, INT nGreen, INT nBlue);
-    def is_SetHardwareGain(self, nMaster):
-        '''
-        if nMaster in [0,100] the gain level is set to this value
-        if nMaster == 0x8000 the current gain value is returned
-        if nMaster == 0x8004 the default gain value is returned       
-        '''
-        err = self.dll.is_SetHardwareGain(UINT(self.hCam), INT(nMaster), INT(-1), INT(-1), INT(-1))
-        if (nMaster == 0x8000) or (nMaster == 0x8004):
-            print 'is_SetHardwareGain: %s = %f' % (GainDict[nMaster], err)
-        else:
-            if (err == 0) and (nMaster in np.arange(101)):
-                print 'is_SetHardwareGain: %f' % (nMaster)
-            print 'is_SetHardwareGain: %s' % (EC[err])
-        return err
-
-
-#  // new with driver version 1.12.0006
-#  IDSEXP is_GetBusSpeed                 (HIDS hCam);
-
-#  // new with driver version 2.00.0001
-#  IDSEXP is_GetCameraList               (PUEYE_CAMERA_LIST pucl);
-#
-#  // new with driver version 2.00.0011
-#  IDSEXP is_SetAutoParameter            (HIDS hCam, INT param, double *pval1, double *pval2);
-#  IDSEXP is_GetAutoInfo                 (HIDS hCam, UEYE_AUTO_INFO *pInfo);
-
-#  IDSEXP is_SetGlobalShutter            (HIDS hCam, INT mode);
-#  IDSEXP is_SetExtendedRegister         (HIDS hCam, INT index,WORD value);
-#  IDSEXP is_GetExtendedRegister         (HIDS hCam, INT index, WORD *pwValue);
 
 #  IDSEXP is_SetHWGainFactor             (HIDS hCam, INT nMode, INT nFactor);
     def is_SetHWGainFactor(self,nMode, nFactor):
@@ -1327,102 +979,46 @@ class CameraAPI:
 
 
 
-#  IDSEXP is_SetTimeout                  (HIDS hCam, UINT nMode, UINT Timeout);
-#  IDSEXP is_GetTimeout                  (HIDS hCam, UINT nMode, UINT *pTimeout);
-
-
-# maybe implement optimal timing?
-
-#typedef enum E_IS_OPTIMAL_CAMERA_TIMING_CMD
-#{
-#    /*!
-#     * \brief Get optimal camera timing.
-#     *        Type of data: \ref IS_OPTIMAL_CAMERA_TIMING_CMD_GET_PIXELCLOCK.
-#     */
-#    IS_OPTIMAL_CAMERA_TIMING_CMD_GET_PIXELCLOCK = 0x00000001,
-#
-#    /*!
-#     * \brief Get optimal camera timing.
-#     *        Type of data: \ref IS_OPTIMAL_CAMERA_TIMING_CMD_GET_FRAMERATE.
-#     */
-#    IS_OPTIMAL_CAMERA_TIMING_CMD_GET_FRAMERATE  = 0x00000002
-#
-#} IS_OPTIMAL_CAMERA_TIMING_CMD;
-#
-#
-#/*!
-# * \brief I/O structure of the optimal camera parameters
-# *
-# * \since uEye SDK 4.30.
-# */
-#typedef struct S_IS_OPTIMAL_CAMERA_TIMING
-#{
-#    INT     s32Mode;
-#    INT     s32TimeoutFineTuning;
-#    INT*    ps32PixelClock;
-#    double* pdFramerate;
-#
-#} IS_OPTIMAL_CAMERA_TIMING;
-#
-#
-#/*! \brief Generic interface to the optimal camera timing functionality.
-# *
-# * \param   hCam            valid device handle.
-# * \param   nCommand        specify the optimal value to be read back (pixelclock and/or framerate).
-# * \param   pParam          input or output storage for the I/O data.
-# * \param   cbSizeOfParam   size of *pParam.
-# * \return  error code
-# *
-# * \since uEye SDK 4.30.
-# */
-#IDSEXP is_OptimalCameraTiming(HIDS hCam, UINT u32Command, void* pParam, UINT u32SizeOfParam);
-
-
-# implementing pixelclock?
 
 
 
+    '''
+    ------------------------------------------------------------------------------------------------
+    Methods that overwrite the suberclass methods.
+    ------------------------------------------------------------------------------------------------
+    '''
 
-#/*!
-#* \brief Interface to set the pixel clock
-#* \param   hCam            valid device handle.
-#* \param   nCommand        Specifies the command
-#* \param   pParam          input or output storage for the accessed param.
-#* \param   cbSizeOfParam   size of *pParam.
-#* \return  error code
-#*/
-#IDSEXP is_PixelClock(HIDS hCam, UINT nCommand, void* pParam, UINT cbSizeOfParam);	
-    def is_PixelClock(self, nCommand, *PixelClock):
-        if (nCommand == 6):
-            Param = ct.c_double(PixelClock[0])
-        else:
-            Param = UINT()
-        pParam = ct.pointer(Param)
-        nSizeOfParam = ct.sizeof(Param)
-        print pParam.contents
-        err = self.dll.is_PixelClock(UINT(self.hCam), UINT(nCommand), pParam, UINT(nSizeOfParam))
-        print 'is_PixelClock: %s = %f' % (str(PixelClockDict[nCommand]), pParam.contents.value)
-        print 'is_PixelClock: %s' % (str(EC[err]))
-        return err, pParam.contents
-
-# maybe useful?
-#/*! 
-# * \brief Generic function to access memory.
-# * 
-# * \param hf            Valid camera handle.
-# * \param u32Command    The read / write command.
-# * \param pParam        I/O parameter, depends on the command.
-# * \param cbParam       Size of *pParam.
-# * \return Status of the execution.
-# */
-#IDSEXP is_Memory(HIDS hf, UINT nCommand, void* pParam, UINT cbSizeOfParam);
-
-
-
-
-
-# Translation for Michael's ImageViewer script
-
+    def GetImageSize(self):
+        '''
+        This method reads out the actual image size and stores it in self.imageSize and returns the values
+        as tuple (width,height).
+        '''
+    	err, structSensor = self.is_GetSensorInfo()
+	imagesize = (int(getattr(structSensor, 'nMaxWidth')), int(getattr(structSensor, 'nMaxHeight')))
+	self.imageSize = imagesize
+	return imagesize
+    
+    def StartCamera(self, camindex=0):
+    	'''
+	Some initialising routines
+	'''
+        err, hCam = self.is_InitCamera()
+	if int(err) == 3:
+	    raise Exception('Error: No camera detected')
+	
+	self.GetImageSize()
+	
+        err1, my_address, my_id = self.is_SetAllocatedImageMem()
+        
+	err2 = self.is_SetImageMem(my_address, my_id)
+	
+	if (int(err) + int(err1) + int(err2)) == 0:
+	    print 'Camera successfully initialised'
+    
+    def StopCamera(self):
+        err = self.is_ExitCamera()
+	if int(err) == 0:
+	   print 'Camera shutting down...'
 
     def GetExposureTime(self, device):
         err, value = self.is_Exposure(7)
@@ -1458,26 +1054,9 @@ class CameraAPI:
         err, structInfo = self.is_GetCameraInfo()
         return getattr(structInfo, 'SerNo[12]')
 
-    def GetImageFormat(self, camindex = 0):
-    	'''returns the image size (int) of the active camera in the format (width, height)'''
-    	err, structSensor = self.is_GetSensorInfo()
-	self.width, self.height = getattr(structSensor, 'nMaxWidth'), getattr(structSensor, 'nMaxHeight')
-	return getattr(structSensor, 'nMaxWidth'), getattr(structSensor, 'nMaxHeight')
 
-    def InitializeCam(self):
-        err, hCam = self.is_InitCamera()
-	if int(err) == 3:
-	    raise Exception('Error: No camera detected')
-	else:
-	    self.width, self.height = self.GetImageFormat()
 
-    def StartCam(self):
-        self.ImageArray = np.zeros((self.height,self.width), dtype = np.uint16)
-        err, my_address, my_id = self.is_SetAllocatedImageMem(self.ImageArray)
-        self.is_SetImageMem(my_address, my_id)
 
-    def StopCam(self):
-        self.is_ExitCamera()
 
 
     def GrabNextImage(self):
@@ -1486,76 +1065,69 @@ class CameraAPI:
 
 if __name__ == '__main__':
 
-    Cam = CameraAPI()
-    # Cam.is_SetErrorReport(0,1)
-    
-    # Cam.InitializeCam()
-    # Cam.GetDeviceInformation()
-    # Cam.StartCam()
-    # Cam.StopCam()
-
-
-
-    res, h1 = Cam.is_InitCamera()
-    if (res == 0):
-        try:    
-        
-            #Cam.is_CameraStatus(1, 0, False)
-        
-            #Cam.is_GetNumberOfCameras()
-            
-            err, structInfo = Cam.is_GetCameraInfo()
-            err, structSensor = Cam.is_GetSensorInfo()
-            Cam.is_SetHWGainFactor(0x8004, 100)    
-            Cam.is_SetExternalTrigger(0)
-	    Cam.is_PixelClock(5)
-            Cam.is_Exposure(12, 25)
-            #Cam.is_SetFrameRate(100)
-	    width, height = 1600, 1200
-            
-            my_numpy = np.zeros((height, width), dtype = np.uint16)
-            #my_numpy_1 = np.zeros((height, width), dtype = np.uint16)
-            #my_numpy_2 = np.zeros((height, width), dtype = np.uint16)
-	    #for i1 in xrange(10): 
-            err, my_address, my_id = Cam.is_SetAllocatedImageMem(my_numpy)
-            #err, my_address_1, my_id_1 = Cam.is_SetAllocatedImageMem(my_numpy_1)
-            #err, my_address_2, my_id_2 = Cam.is_SetAllocatedImageMem(my_numpy_2)
-            print my_address.contents
-            #print my_address_1.contents
-            #print my_address_2.contents
-
-            print my_id
-                
-            Cam.is_SetImageMem(my_address, my_id) # makes the allocated memory active
-            #Cam.is_SetImageMem(my_address_1, my_id_1) # makes the allocated memory active
-            #Cam.is_SetImageMem(my_address_2, my_id_2) # makes the allocated memory active
-               
-
-            #fig = plt.figure()
-            #ax = fig.add_subplot(111)
-            #fig.show()
-
-            Cam.is_CaptureVideo(20)
-            
-	    for i0 in xrange(4):
-            	print my_numpy
-	    time.sleep(1)    	
-
-	    Cam.is_GetFramesPerSecond()
-
-            #    raw_input("press Enter to continue")
-            #    ax.imshow(my_numpy, interpolation = 'nearest')
-            #    #ax.hist(my_numpy.flatten(), 100, range = (0,70000))
-            #    fig.canvas.draw()
-            #    #plt.pause(0.02)
-        
-            ##Cam.is_CaptureStatus(2)
-            Cam.is_FreeImageMem(my_address, my_id)
-            
-            
-        finally:
-            Cam.is_ExitCamera()
-    else:
-        print str(EC[res])
-        Cam.hCam = 1
-        Cam.is_ExitCamera()
+    check = CameraTypeSpecific_API()
+    check.is_SetErrorReport(1)
+    check.StartCamera()
+    check.StopCamera()
+#
+#
+#    res, h1 = Cam.is_InitCamera()
+#    if (res == 0):
+#        try:    
+#        
+#            #Cam.is_CameraStatus(1, 0, False)
+#        
+#            #Cam.is_GetNumberOfCameras()
+#            
+#            err, structInfo = Cam.is_GetCameraInfo()
+#            err, structSensor = Cam.is_GetSensorInfo()
+#            Cam.is_SetHWGainFactor(0x8004, 100)    
+#            Cam.is_Exposure(12, 25)
+#	    width, height = 1600, 1200
+#            
+#            my_numpy = np.zeros((height, width), dtype = np.uint16)
+#            #my_numpy_1 = np.zeros((height, width), dtype = np.uint16)
+#            #my_numpy_2 = np.zeros((height, width), dtype = np.uint16)
+#	    #for i1 in xrange(10): 
+#            err, my_address, my_id = Cam.is_SetAllocatedImageMem(my_numpy)
+#            #err, my_address_1, my_id_1 = Cam.is_SetAllocatedImageMem(my_numpy_1)
+#            #err, my_address_2, my_id_2 = Cam.is_SetAllocatedImageMem(my_numpy_2)
+#            print my_address.contents
+#            #print my_address_1.contents
+#            #print my_address_2.contents
+#
+#            print my_id
+#                
+#            Cam.is_SetImageMem(my_address, my_id) # makes the allocated memory active
+#            #Cam.is_SetImageMem(my_address_1, my_id_1) # makes the allocated memory active
+#            #Cam.is_SetImageMem(my_address_2, my_id_2) # makes the allocated memory active
+#               
+#
+#            #fig = plt.figure()
+#            #ax = fig.add_subplot(111)
+#            #fig.show()
+#
+#            Cam.is_CaptureVideo(20)
+#            
+#	    for i0 in xrange(4):
+#            	print my_numpy
+#	    time.sleep(1)    	
+#
+#	    Cam.is_GetFramesPerSecond()
+#
+#            #    raw_input("press Enter to continue")
+#            #    ax.imshow(my_numpy, interpolation = 'nearest')
+#            #    #ax.hist(my_numpy.flatten(), 100, range = (0,70000))
+#            #    fig.canvas.draw()
+#            #    #plt.pause(0.02)
+#        
+#            ##Cam.is_CaptureStatus(2)
+#            Cam.is_FreeImageMem(my_address, my_id)
+#            
+#            
+#        finally:
+#            Cam.is_ExitCamera()
+#    else:
+#        print str(EC[res])
+#        Cam.hCam = 1
+#        Cam.is_ExitCamera()
