@@ -48,7 +48,7 @@ def gaussian2(xy, *p):
     R = rotmatrix(alpha)
     M = np.dot(R,np.dot(np.array([[1./sx**2,0],[0,1./sy**2]]),R.T))
     r = np.array([xy[:,0]-x0,xy[:,1]-y0])
-    g = A*np.exp(-0.5*np.sum(np.dot(M,r)*r,axis=0)) + off
+    g = A*np.exp(-2*np.sum(np.dot(M,r)*r,axis=0)) + off
     # print g
     return g
 
@@ -70,7 +70,7 @@ def FitGaussian(data):
         return arrs, cutoff
 
     # x = np.arange(data.size)
-    usepervimpro = True # Should the 'split' method be used to improve performance?
+    usepervimpro = False # Should the 'split' method be used to improve performance?
     meansize = 5 # if usepervimpro = True: how many values are taken together to calculate the mean.
     critvalue = 200 # value from which on the 'split' method is used.
 
@@ -84,6 +84,9 @@ def FitGaussian(data):
     else:
         x = np.arange(data.size)
 
+    nonnan = np.where(~np.isnan(data))
+    data = data[nonnan]
+    x = x[nonnan]
     # print data
 
     def errf(params):
