@@ -762,6 +762,11 @@ class CameraTypeSpecific_API(Camera_API):
         #Own variables
 	# This is the camera handle:
 	self.hCam = 0
+
+	# Number of cameras (mutli-camera operation not implemented yet)
+	self.numberCams = None
+
+
 	# The array where the image is going to stored in.
         self.ImageArray = np.array([])
 
@@ -1019,6 +1024,12 @@ class CameraTypeSpecific_API(Camera_API):
         err = self.is_ExitCamera()
 	if int(err) == 0:
 	   print 'Camera shutting down...'
+
+
+    def CreateCameraList(self):
+		
+    	self.cameraList = 0
+
 
     def GetExposureTime(self, device):
         err, value = self.is_Exposure(7)
