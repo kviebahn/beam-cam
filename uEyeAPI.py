@@ -978,8 +978,8 @@ class CameraTypeSpecific_API(Camera_API):
         nSizeOfParam = 8          
         #print pParam.contents
         err = self.dll.is_Exposure(UINT(self.hCam), UINT(nCommand), pParam, UINT(nSizeOfParam))
-        print 'is_Exposure: %s = %f' % (str(ExposureDict[nCommand]), pParam.contents.value)
-        print 'is_Exposure: %s' % (str(EC[err]))
+        #print 'is_Exposure: %s = %f' % (str(ExposureDict[nCommand]), pParam.contents.value)
+        #print 'is_Exposure: %s' % (str(EC[err]))
         return err, pParam.contents
 
 
@@ -1073,8 +1073,13 @@ class CameraTypeSpecific_API(Camera_API):
 	return self.exposureSteps
 
 
-    def GetGainValue(self, device):
-        return self.is_SetHardwareGain(0x8000)
+    def GetGainValue(self):
+    	'''gets the current gain value'''
+	err, gainval = self.is_SetHardwareGain(0x8000)
+	self.gainValue = gainval.value
+	return self.gainValue
+
+
 
     def SetGainValue(self, device, gainvalue):
         if gainvalue in np.arange(101):
@@ -1112,8 +1117,10 @@ if __name__ == '__main__':
     check.CreateCameraList()
     #print check.cameraList
     
-    check.GetExposureTimeRange()
-    print check.exposureRange
+    check.GetExposureTimeSteps()
+    print check.exposureSteps
+    check.GetGainValue()
+    print check.gainValue
     
     
     print check.imageArray
