@@ -875,14 +875,14 @@ class CameraTypeSpecific_API(Camera_API):
     def is_GetCameraInfo(self):
         pInfo = ct.pointer(struct_BOARDINFO())
         err = self.dll.is_GetCameraInfo(UINT(self.hCam), pInfo)
-        print 'is_GetCameraInfo: %s' % (EC[err])
-        for field_name, field_type in pInfo.contents._fields_:
-            if field_name == 'Select':
-                print field_name, getattr(pInfo.contents, field_name)
-            elif field_name == 'Type':
-                print field_name, CameraTypeDict[getattr(pInfo.contents, field_name)]
-            else:
-                print field_name, getattr(pInfo.contents, field_name)
+        #print 'is_GetCameraInfo: %s' % (EC[err])
+#        for field_name, field_type in pInfo.contents._fields_:
+#            if field_name == 'Select':
+#                print field_name, getattr(pInfo.contents, field_name)
+#            elif field_name == 'Type':
+#                print field_name, CameraTypeDict[getattr(pInfo.contents, field_name)]
+#            else:
+#                print field_name, getattr(pInfo.contents, field_name)
         return err, pInfo.contents
 
 #  IDSEXPUL is_CameraStatus              (HIDS hCam, INT nInfo, ULONG ulValue);
@@ -912,9 +912,9 @@ class CameraTypeSpecific_API(Camera_API):
     def is_GetSensorInfo(self):
         pInfo = ct.pointer(struct_SENSORINFO())
         err = self.dll.is_GetSensorInfo(UINT(self.hCam), pInfo)
-        #print 'is_GetSensorInfo: %s' % (EC[err])
-        #for field_name, field_type in pInfo.contents._fields_:
-        #    print field_name, getattr(pInfo.contents, field_name)
+        print 'is_GetSensorInfo: %s' % (EC[err])
+        for field_name, field_type in pInfo.contents._fields_:
+            print field_name, getattr(pInfo.contents, field_name)
         return err, pInfo.contents
 
 #  IDSEXP is_SetHWGainFactor             (HIDS hCam, INT nMode, INT nFactor);
@@ -1027,16 +1027,51 @@ class CameraTypeSpecific_API(Camera_API):
 
 
     def CreateCameraList(self):
-		
-    	self.cameraList = 0
+    	'''This method is supposed to return a list of strings (the serial numbers of connected cameras, and set the variable self.cameraList to this list. Currently we don't need multi-camera operation, so I just make a one-entry list of the current active serial number.'''
+        err, structInfo = self.is_GetCameraInfo()
+        if int(err) != 0:
+	    raise Exception('Error loading Serial number')
+	
+	my_serial = getattr(structInfo, 'SerNo[12]')
+    	self.cameraList = [my_serial] 
+	return [my_serial]
+
+    def GetNextImage(self):
+	'''This method stores the active image in self.imageArray'''
+	if (int(self.is_CaptureVideo(25)) != 0):
+	    raise Exception('Error during image acquisition')
+	
+    def GetSaturationValue():
+    	'''Saturated pixels have this value. the bits per pixel for uEye cameras is 16!'''
+    	satvalue = 2**16 - 1
+	self.saturationValue = satvalue
+	return satvalue
 
 
-    def GetExposureTime(self, device):
-        err, value = self.is_Exposure(7)
-        return value
+    def GetExposureTime(self):
+        '''Sets the variabel self.exposureTime to the current value in ms.'''
+	err, my_value = self.is_Exposure(7)
+	self.exposureTime = my_value.value
+        return my_value.value
 
-    def SetExposureTime(self,device,exposuretime):
+    def SetExposureTime(self,exposuretime = 0):
+        '''Changes the exposure time of the camera to exposuretime, in ms. Sets the variabel self.exposureTime to the current value in ms.'''
         self.is_Exposure(12, exposuretime)
+	self.exposureTime = exposuretime
+
+    def GetExposureTimeRange(self):
+        '''Gets the range of exposure time as (min, max).'''
+    	err0, expomin = self.is_Exposure(3)
+    	err1, expomax = self.is_Exposure(4)
+	self.exposureRange = (expomin.value, expomax.value)
+	return self.exposureRange
+
+    def GetExposureTimeSteps(self):
+    	'''The increments of exposure time.'''
+    	err, exposteps = self.is_Exposure(5)
+	self.exposureSteps = exposteps.value
+	return self.exposureSteps
+
 
     def GetGainValue(self, device):
         return self.is_SetHardwareGain(0x8000)
@@ -1060,11 +1095,6 @@ class CameraTypeSpecific_API(Camera_API):
     def GetDeviceKeyListEntry(self, camindex = 0):
         pass
 
-    def GetDeviceInformation(self):
-    	'''returns the serial number of the active camera'''
-        err, structInfo = self.is_GetCameraInfo()
-        return getattr(structInfo, 'SerNo[12]')
-
 
 
 
@@ -1079,7 +1109,22 @@ if __name__ == '__main__':
     check = CameraTypeSpecific_API()
     check.is_SetErrorReport(1)
     check.StartCamera()
+    check.CreateCameraList()
+    #print check.cameraList
+    
+    check.GetExposureTimeRange()
+    print check.exposureRange
+    
+    
+    print check.imageArray
+    check.GetNextImage()
+    print check.imageArray
+    
     check.StopCamera()
+
+
+
+
 #
 #
 #    res, h1 = Cam.is_InitCamera()
