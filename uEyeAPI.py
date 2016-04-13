@@ -912,10 +912,29 @@ class CameraTypeSpecific_API(Camera_API):
     def is_GetSensorInfo(self):
         pInfo = ct.pointer(struct_SENSORINFO())
         err = self.dll.is_GetSensorInfo(UINT(self.hCam), pInfo)
-        print 'is_GetSensorInfo: %s' % (EC[err])
-        for field_name, field_type in pInfo.contents._fields_:
-            print field_name, getattr(pInfo.contents, field_name)
+        #print 'is_GetSensorInfo: %s' % (EC[err])
+        #for field_name, field_type in pInfo.contents._fields_:
+        #    print field_name, getattr(pInfo.contents, field_name)
         return err, pInfo.contents
+
+# This function is obsolete:
+#  IDSEXP is_SetHardwareGain             (HIDS hCam, INT nMaster, INT nRed, INT nGreen, INT nBlue);
+    def is_SetHardwareGain(self, nMaster):
+        '''
+	if nMaster in [0,100] the gain level is set to this value
+	if nMaster == 0x8000 the current gain value is returned
+	if nMaster == 0x8004 the default gain value is returned
+	'''
+	err = self.dll.is_SetHardwareGain(UINT(self.hCam), INT(nMaster), INT(-1), INT(-1), INT(-1))
+	#if (nMaster == 0x8000) or (nMaster == 0x8004):
+	#    print 'is_SetHardwareGain: %s = %f' % (GainDict[nMaster], err)
+	#else:
+	#    if (err == 0) and (nMaster in np.arange(101)):
+	#        print 'is_SetHardwareGain: %f' % (nMaster)
+	#	print 'is_SetHardwareGain: %s' % (EC[err])
+	return err
+
+
 
 #  IDSEXP is_SetHWGainFactor             (HIDS hCam, INT nMode, INT nFactor);
     def is_SetHWGainFactor(self,nMode, nFactor):
@@ -1075,38 +1094,23 @@ class CameraTypeSpecific_API(Camera_API):
 
     def GetGainValue(self):
     	'''gets the current gain value'''
-	err, gainval = self.is_SetHardwareGain(0x8000)
-	self.gainValue = gainval.value
-	return self.gainValue
+	err = self.is_SetHardwareGain(0x8000)
+	self.gainValue = err
+	return err
 
+    def SetGainValue(self, gainvalue = 0):
+        err = self.is_SetHardwareGain(gainvalue)
+   	self.gainValue = gainvalue
+	return gainvalue
 
+    def GetGainRange(self):
+    	self.gainRange = (0.0, 100.0)
+	return self.gainRange
 
-    def SetGainValue(self, device, gainvalue):
-        if gainvalue in np.arange(101):
-            self.is_SetHardwareGain(gainvalue)
-        else:
-            print 'Gain value not allowed'
-    
-    def SetStatusLED(self, device, bool):
-        pass
+    def GetGainSteps(self):
+    	self.gainSteps = 1.0
+	return self.gainSteps
 
-    def GetDeviceKeyList(self):
-        pass
-    
-    def GetDeviceKeyListSize(self):
-        err, no = self.is_GetNumberOfCameras()
-        return no
-
-    def GetDeviceKeyListEntry(self, camindex = 0):
-        pass
-
-
-
-
-
-
-    def GrabNextImage(self):
-        self.is_CaptureVideo(25)
 
 
 if __name__ == '__main__':
@@ -1117,12 +1121,7 @@ if __name__ == '__main__':
     check.CreateCameraList()
     #print check.cameraList
     
-    check.GetExposureTimeSteps()
-    print check.exposureSteps
-    check.GetGainValue()
-    print check.gainValue
-    
-    
+
     print check.imageArray
     check.GetNextImage()
     print check.imageArray
