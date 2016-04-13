@@ -41,10 +41,13 @@ Please see the README.md file for a copy of the GNU General Public License, or o
 # cameratypes = ['Ximea xiQ']
 # cameraapinames = ['XimeaxiQCamAPI']
 
+'''Using uEye cameras only'''
+cameratypes = ['uEye']
+cameraapinames = ['uEyeAPI']
 
-'''Only use demo'''
-cameratypes = []
-cameraapinames = []
+#'''Only use demo'''
+#cameratypes = []
+#cameraapinames = []
 
 '''-----------------------------------------------'''
 

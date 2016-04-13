@@ -1026,9 +1026,7 @@ class CameraTypeSpecific_API(Camera_API):
     	'''
 	Some initialising routines
 	'''
-        err, hCam = self.is_InitCamera()
-	if int(err) == 3:
-	    raise Exception('Error: No camera detected')
+
 	
 	self.GetImageSize()
 	
@@ -1036,7 +1034,7 @@ class CameraTypeSpecific_API(Camera_API):
         
 	err2 = self.is_SetImageMem(my_address, my_id)
 	
-	if (int(err) + int(err1) + int(err2)) == 0:
+	if (int(err1) + int(err2)) == 0:
 	    print 'Camera successfully initialised'
     
     def StopCamera(self):
@@ -1047,7 +1045,12 @@ class CameraTypeSpecific_API(Camera_API):
 
     def CreateCameraList(self):
     	'''This method is supposed to return a list of strings (the serial numbers of connected cameras, and set the variable self.cameraList to this list. Currently we don't need multi-camera operation, so I just make a one-entry list of the current active serial number.'''
-        err, structInfo = self.is_GetCameraInfo()
+        
+        err, hCam = self.is_InitCamera()
+	if int(err) == 3:
+	    raise Exception('Error: No camera detected')
+	
+	err, structInfo = self.is_GetCameraInfo()
         if int(err) != 0:
 	    raise Exception('Error loading Serial number')
 	
@@ -1060,7 +1063,7 @@ class CameraTypeSpecific_API(Camera_API):
 	if (int(self.is_CaptureVideo(25)) != 0):
 	    raise Exception('Error during image acquisition')
 	
-    def GetSaturationValue():
+    def GetSaturationValue(self):
     	'''Saturated pixels have this value. the bits per pixel for uEye cameras is 16!'''
     	satvalue = 2**16 - 1
 	self.saturationValue = satvalue
@@ -1117,8 +1120,8 @@ if __name__ == '__main__':
 
     check = CameraTypeSpecific_API()
     check.is_SetErrorReport(1)
-    check.StartCamera()
     check.CreateCameraList()
+    check.StartCamera()
     #print check.cameraList
     
 
