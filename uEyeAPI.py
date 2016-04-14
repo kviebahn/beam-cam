@@ -33,7 +33,7 @@ import numpy as np
 import time
 import platform
 import matplotlib.pyplot as plt
-
+#from scipy.ndimage import zoom
 
 
 from CameraAPI import Camera_API
@@ -1064,7 +1064,9 @@ class CameraTypeSpecific_API(Camera_API):
 	'''This method stores the active image in self.imageArray'''
 	if (int(self.is_CaptureVideo(25)) != 0):
 	    raise Exception('Error during image acquisition')
-	
+#
+#	self.imageArray = zoom(self.imageArray, [1.0, 0.66])
+
     def GetSaturationValue(self):
     	'''Saturated pixels have this value. the bits per pixel for uEye cameras is 16!'''
     	satvalue = 2**16 - 1
