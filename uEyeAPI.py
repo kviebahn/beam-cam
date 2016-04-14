@@ -761,7 +761,7 @@ class CameraTypeSpecific_API(Camera_API):
         
         #Own variables
 	# This is the camera handle:
-	self.hCam = 0
+	self.hCam = 1
 
 	# Number of cameras (mutli-camera operation not implemented yet)
 	self.numberCams = None
@@ -770,7 +770,8 @@ class CameraTypeSpecific_API(Camera_API):
 	# The array where the image is going to stored in.
         self.ImageArray = np.array([])
 
-
+	# Maybe useful in the future:
+	self.pixelPitch = None
 
 ##########################################################
 ### original uEye methods (just translated form c to python)
@@ -899,7 +900,6 @@ class CameraTypeSpecific_API(Camera_API):
             print 'is_CameraStatus %s' % (EC[err])
             return err
 
-#  IDSEXP is_GetNumberOfCameras          (INT* pnNumCams);
     def is_GetNumberOfCameras(self):
         stat = ct.c_int32()
         p_stat = ct.pointer(stat)
@@ -917,8 +917,6 @@ class CameraTypeSpecific_API(Camera_API):
         #    print field_name, getattr(pInfo.contents, field_name)
         return err, pInfo.contents
 
-# This function is obsolete:
-#  IDSEXP is_SetHardwareGain             (HIDS hCam, INT nMaster, INT nRed, INT nGreen, INT nBlue);
     def is_SetHardwareGain(self, nMaster):
         '''
 	if nMaster in [0,100] the gain level is set to this value
@@ -1019,15 +1017,18 @@ class CameraTypeSpecific_API(Camera_API):
         '''
     	err, structSensor = self.is_GetSensorInfo()
 	imagesize = (int(getattr(structSensor, 'nMaxWidth')), int(getattr(structSensor, 'nMaxHeight')))
+	pixelSize = getattr(structSensor, 'wPixelSize')/100.
+	print 'Pixel size = %1.2f um' %(pixelSize)
+	self.pixelPitch = pixelSize
 	self.imageSize = imagesize
+	
 	return imagesize
     
     def StartCamera(self, camindex=0):
     	'''
 	Some initialising routines
 	'''
-
-	
+		
 	self.GetImageSize()
 	
         err1, my_address, my_id = self.is_SetAllocatedImageMem()
@@ -1045,11 +1046,12 @@ class CameraTypeSpecific_API(Camera_API):
 
     def CreateCameraList(self):
     	'''This method is supposed to return a list of strings (the serial numbers of connected cameras, and set the variable self.cameraList to this list. Currently we don't need multi-camera operation, so I just make a one-entry list of the current active serial number.'''
-        
-        err, hCam = self.is_InitCamera()
-	if int(err) == 3:
+
+        err0, hCam = self.is_InitCamera()
+	if int(err0) == 3:
 	    raise Exception('Error: No camera detected')
-	
+	self.hCam = hCam
+        
 	err, structInfo = self.is_GetCameraInfo()
         if int(err) != 0:
 	    raise Exception('Error loading Serial number')
@@ -1117,13 +1119,11 @@ class CameraTypeSpecific_API(Camera_API):
 
 
 if __name__ == '__main__':
-
     check = CameraTypeSpecific_API()
     check.is_SetErrorReport(1)
     check.CreateCameraList()
+    check.is_GetSensorInfo()
     check.StartCamera()
-    #print check.cameraList
-    
 
     print check.imageArray
     check.GetNextImage()
@@ -1132,67 +1132,3 @@ if __name__ == '__main__':
     check.StopCamera()
 
 
-
-
-#
-#
-#    res, h1 = Cam.is_InitCamera()
-#    if (res == 0):
-#        try:    
-#        
-#            #Cam.is_CameraStatus(1, 0, False)
-#        
-#            #Cam.is_GetNumberOfCameras()
-#            
-#            err, structInfo = Cam.is_GetCameraInfo()
-#            err, structSensor = Cam.is_GetSensorInfo()
-#            Cam.is_SetHWGainFactor(0x8004, 100)    
-#            Cam.is_Exposure(12, 25)
-#	    width, height = 1600, 1200
-#            
-#            my_numpy = np.zeros((height, width), dtype = np.uint16)
-#            #my_numpy_1 = np.zeros((height, width), dtype = np.uint16)
-#            #my_numpy_2 = np.zeros((height, width), dtype = np.uint16)
-#	    #for i1 in xrange(10): 
-#            err, my_address, my_id = Cam.is_SetAllocatedImageMem(my_numpy)
-#            #err, my_address_1, my_id_1 = Cam.is_SetAllocatedImageMem(my_numpy_1)
-#            #err, my_address_2, my_id_2 = Cam.is_SetAllocatedImageMem(my_numpy_2)
-#            print my_address.contents
-#            #print my_address_1.contents
-#            #print my_address_2.contents
-#
-#            print my_id
-#                
-#            Cam.is_SetImageMem(my_address, my_id) # makes the allocated memory active
-#            #Cam.is_SetImageMem(my_address_1, my_id_1) # makes the allocated memory active
-#            #Cam.is_SetImageMem(my_address_2, my_id_2) # makes the allocated memory active
-#               
-#
-#            #fig = plt.figure()
-#            #ax = fig.add_subplot(111)
-#            #fig.show()
-#
-#            Cam.is_CaptureVideo(20)
-#            
-#	    for i0 in xrange(4):
-#            	print my_numpy
-#	    time.sleep(1)    	
-#
-#	    Cam.is_GetFramesPerSecond()
-#
-#            #    raw_input("press Enter to continue")
-#            #    ax.imshow(my_numpy, interpolation = 'nearest')
-#            #    #ax.hist(my_numpy.flatten(), 100, range = (0,70000))
-#            #    fig.canvas.draw()
-#            #    #plt.pause(0.02)
-#        
-#            ##Cam.is_CaptureStatus(2)
-#            Cam.is_FreeImageMem(my_address, my_id)
-#            
-#            
-#        finally:
-#            Cam.is_ExitCamera()
-#    else:
-#        print str(EC[res])
-#        Cam.hCam = 1
-#        Cam.is_ExitCamera()
