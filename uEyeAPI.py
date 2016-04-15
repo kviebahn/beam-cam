@@ -33,7 +33,7 @@ import numpy as np
 import time
 import platform
 import matplotlib.pyplot as plt
-#from scipy.ndimage import zoom
+from scipy.ndimage import zoom
 
 
 from CameraAPI import Camera_API
@@ -744,7 +744,7 @@ class CameraTypeSpecific_API(Camera_API):
 	self.dll = ct.cdll.LoadLibrary(self.dllPath)    
         
 	# Variables inherited from Camera_API
-        self.imageArray = None
+        self.imageArray = np.array([])
 
         self.cameraList = None
 
@@ -768,7 +768,7 @@ class CameraTypeSpecific_API(Camera_API):
 
 
 	# The array where the image is going to stored in.
-        self.ImageArray = np.array([])
+        self.ImageArrayRaw = np.array([])
 
 	# Maybe useful in the future:
 	self.pixelPitch = None
@@ -835,8 +835,8 @@ class CameraTypeSpecific_API(Camera_API):
         width = self.imageSize[0]
 	height = self.imageSize[1]
 	#print width, height
-	self.imageArray = np.zeros((height, width), dtype = np.uint16)
-	numpyArray = self.imageArray
+	self.imageArrayRaw = np.zeros((height, width), dtype = np.uint16)
+	numpyArray = self.imageArrayRaw
 	pcMem = numpyArray.ctypes.data_as(ct.POINTER(ct.c_uint16))
         pid = ct.pointer(ct.c_int())
         err = self.dll.is_SetAllocatedImageMem(UINT(self.hCam), ct.c_int(width), ct.c_int(height), ct.c_int(bitspixel), pcMem, pid)
@@ -1064,8 +1064,8 @@ class CameraTypeSpecific_API(Camera_API):
 	'''This method stores the active image in self.imageArray'''
 	if (int(self.is_CaptureVideo(25)) != 0):
 	    raise Exception('Error during image acquisition')
-#
-#	self.imageArray = zoom(self.imageArray, [1.0, 0.66])
+
+	self.imageArray = zoom(self.imageArrayRaw, [1.0, 0.66])
 
     def GetSaturationValue(self):
     	'''Saturated pixels have this value. the bits per pixel for uEye cameras is 16!'''
