@@ -923,6 +923,7 @@ class CameraTypeSpecific_API(Camera_API):
 	if nMaster == 0x8000 the current gain value is returned
 	if nMaster == 0x8004 the default gain value is returned
 	'''
+	print INT(nMaster)
 	err = self.dll.is_SetHardwareGain(UINT(self.hCam), INT(nMaster), INT(-1), INT(-1), INT(-1))
 	#if (nMaster == 0x8000) or (nMaster == 0x8004):
 	#    print 'is_SetHardwareGain: %s = %f' % (GainDict[nMaster], err)
@@ -1106,7 +1107,7 @@ class CameraTypeSpecific_API(Camera_API):
 	return err
 
     def SetGainValue(self, gainvalue = 0):
-        err = self.is_SetHardwareGain(gainvalue)
+        err = self.is_SetHardwareGain(int(gainvalue))
    	self.gainValue = gainvalue
 	return gainvalue
 
