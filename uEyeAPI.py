@@ -1106,7 +1106,7 @@ class CameraTypeSpecific_API(Camera_API):
 	return err
 
     def SetGainValue(self, gainvalue = 0):
-        err = self.is_SetHardwareGain(gainvalue)
+        err = self.is_SetHardwareGain(int(gainvalue))
    	self.gainValue = gainvalue
 	return gainvalue
 
