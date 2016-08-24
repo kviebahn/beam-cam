@@ -19,5 +19,9 @@ def SetUp():
     cam.GetNextImage()
 
 def ReadOut():
-    #print cam.imageArray
-    cam.StopCamera()
+	#print('Saving image')
+	return cam.imageArray
+
+def QuitCamera():
+	cam.StopCamera()
+

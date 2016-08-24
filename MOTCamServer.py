@@ -55,8 +55,9 @@ class MotCamServer(Subscriber):
 
         elif event.subject == 'MotCamReadOut':
             print('read image and write it to hdf5')
-            my_image_array = motcam.ReadOut()
-            np.save(self.datapath + '.npy', my_image_array)
+            image = motcam.ReadOut()
+            motcam.QuitCamera()
+            np.save(self.datapath + '.npy', image)
 
         elif event.subject == 'MotCamSetUp':
             motcam.SetUp()

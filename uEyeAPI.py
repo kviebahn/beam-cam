@@ -1109,7 +1109,6 @@ class CameraTypeSpecific_API(Camera_API):
     def GetNextImage(self):
 	'''This method stores the active image in self.imageArray'''
 	if (int(self.is_CaptureVideo(1000)) != 0):
-        self.StopCamera()
 	    raise Exception('Error during image acquisition')
 
 	self.imageArray = zoom(self.imageArrayRaw, [1.0, 0.666])
