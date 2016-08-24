@@ -35,7 +35,6 @@ import platform
 import matplotlib.pyplot as plt
 from scipy.ndimage import zoom
 
-
 from CameraAPI import Camera_API
 
 
@@ -567,6 +566,35 @@ ExposureCapsDict = {
 
 
 
+
+# Trigger modes
+TriggerDictFlip = {
+'IS_GET_EXTERNALTRIGGER              ':0x8000,
+'IS_GET_TRIGGER_STATUS               ':0x8001,
+'IS_GET_TRIGGER_MASK                 ':0x8002,
+'IS_GET_TRIGGER_INPUTS               ':0x8003,
+'IS_GET_SUPPORTED_TRIGGER_MODE       ':0x8004,
+'IS_GET_TRIGGER_COUNTER              ':0x8000,
+'IS_SET_TRIGGER_MASK                 ':0x0100,
+'IS_SET_TRIGGER_CONTINUOUS           ':0x1000,
+'IS_SET_TRIGGER_OFF                  ':0x0000,
+'IS_SET_TRIGGER_HI_LO                ':0x0001, 
+'IS_SET_TRIGGER_LO_HI                ':0x0002, 
+'IS_SET_TRIGGER_SOFTWARE             ':0x0008, 
+'IS_SET_TRIGGER_HI_LO_SYNC           ':0x0010,
+'IS_SET_TRIGGER_LO_HI_SYNC           ':0x0020,
+'IS_SET_TRIGGER_PRE_HI_LO            ':0x0040,
+'IS_SET_TRIGGER_PRE_LO_HI            ':0x0080,
+'IS_GET_TRIGGER_DELAY                ':0x8000,
+'IS_GET_MIN_TRIGGER_DELAY            ':0x8001,
+'IS_GET_MAX_TRIGGER_DELAY            ':0x8002,
+'IS_GET_TRIGGER_DELAY_GRANULARITY    ':0x8003
+}
+
+TriggerDict = flipDict(TriggerDictFlip)
+
+
+
 # Up to here dictionaries of parameters for IS functions
 
 
@@ -777,7 +805,16 @@ class CameraTypeSpecific_API(Camera_API):
 ### original uEye methods (just translated form c to python)
 ##########################################################
 
-
+# IDSEXP is_IO(HIDS hCam, UINT nCommand, void* pParam, UINT cbSizeOfParam);
+    def is_IO(self, nCommand):
+        '''Not correctly implemented'''
+        nCurrentState = ct.ui(0)
+        print(nCurrentState)
+        pParam = ct.pointer(nCurrentState)
+        err = self.dll.is_IO(UINT(self.hCam), UINT(nCommand), pParam, UINT(1))
+        print(nCurrentState)
+        print('is_IO: %s') %(err)
+        return err
 
 #  IDSEXP   is_GetNumberOfDevices     (void);
 
@@ -790,7 +827,7 @@ class CameraTypeSpecific_API(Camera_API):
         return err
 
     def is_CaptureVideo(self, wait):
-        '''wait is time in ms(?)'''
+        '''wait is timeout value in 10ms, min 40ms'''
         err = self.dll.is_FreezeVideo(UINT(self.hCam), INT(wait))
         #print 'is_CaptureVideo: %s' % (EC[err])
         return err
@@ -1000,6 +1037,15 @@ class CameraTypeSpecific_API(Camera_API):
         return err, pParam.contents
 
 
+#IDSEXP is_SetExternalTrigger     (HIDS hCam, INT nTriggerMode);
+    def is_SetExternalTrigger(self, nTriggerMode):
+        '''If called with IS_GET_SUPPORTED_TRIGGER_MODE = 0x8004, then it returns supported mode, seperated by logical ORs.
+        Hence 0x1009 means modes 0x1000, 0x0001, and 0x1008'''
+        err = self.dll.is_SetExternalTrigger(UINT(self.hCam), INT(nTriggerMode))
+        return err
+
+
+### Methods that are needed for trigger operation:
 
 
 
@@ -1062,10 +1108,11 @@ class CameraTypeSpecific_API(Camera_API):
 
     def GetNextImage(self):
 	'''This method stores the active image in self.imageArray'''
-	if (int(self.is_CaptureVideo(25)) != 0):
+	if (int(self.is_CaptureVideo(1000)) != 0):
+        self.StopCamera()
 	    raise Exception('Error during image acquisition')
 
-	self.imageArray = zoom(self.imageArrayRaw, [1.0, 0.66])
+	self.imageArray = zoom(self.imageArrayRaw, [1.0, 0.666])
 
     def GetSaturationValue(self):
     	'''Saturated pixels have this value. the bits per pixel for uEye cameras is 16!'''
@@ -1122,14 +1169,15 @@ class CameraTypeSpecific_API(Camera_API):
 
 if __name__ == '__main__':
     check = CameraTypeSpecific_API()
-    check.is_SetErrorReport(1)
+    #check.is_SetErrorReport(1)
     check.CreateCameraList()
     check.is_GetSensorInfo()
     check.StartCamera()
 
-    print check.imageArray
-    check.GetNextImage()
-    print check.imageArray
+#    check.is_SetExternalTrigger(0x0001)    
+#    print check.imageArray
+#    check.GetNextImage()
+#    print check.imageArray
     
     check.StopCamera()
 
