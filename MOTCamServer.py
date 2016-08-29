@@ -38,8 +38,8 @@ class MotCamServer(Subscriber):
         self.subscribe('MotCamReadOut')
         self.subscribe('MotCamSetUp')
         self.subscribe('fprefix')
-
         self.datapath = None
+        motcam.SetUp()
         print('listening for events')
 
     def event(self, event):
@@ -56,11 +56,11 @@ class MotCamServer(Subscriber):
         elif event.subject == 'MotCamReadOut':
             print('read image and write it to hdf5')
             image = motcam.ReadOut()
-            motcam.QuitCamera()
+            #motcam.QuitCamera()
             np.save(self.datapath + '.npy', image)
 
         elif event.subject == 'MotCamSetUp':
-            motcam.SetUp()
+            motcam.Arm()
             #print('MotCam is set up')
         
         elif event.subject == 'iterationStatus':
