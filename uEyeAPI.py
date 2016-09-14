@@ -813,6 +813,24 @@ class CameraTypeSpecific_API(Camera_API):
 ### original uEye methods (just translated form c to python)
 ##########################################################
 
+#/*!
+#* \brief Interface to set the pixel clock
+#* \param   hCam            valid device handle.
+#* \param   nCommand        Specifies the command
+#* \param   pParam          input or output storage for the accessed param.
+#* \param   cbSizeOfParam   size of *pParam.
+#* \return  error code
+#*/
+#IDSEXP is_PixelClock(HIDS hCam, UINT nCommand, void* pParam, UINT cbSizeOfParam);
+    def is_PixelClock(self, nCommand):
+        '''Setting the pixel clock to a lower value, due to USB transmission problems.'''
+        #pParam = ct.c_void_p()
+        pParam = UINT(20) #20 MHz
+        err = self.dll.is_PixelClock(UINT(self.hCam), UINT(nCommand), ct.byref(pParam), UINT(ct.sizeof(pParam)))
+        print('is_PixelClock: %s') %(EC[err])
+        #print(pParam)
+        return err
+
 # IDSEXP is_IO(HIDS hCam, UINT nCommand, void* pParam, UINT cbSizeOfParam);
     def is_IO(self, nCommand):
         '''Not correctly implemented'''
@@ -1082,7 +1100,7 @@ class CameraTypeSpecific_API(Camera_API):
         '''
         Some initialising routines
         '''
-            
+        self.is_PixelClock(6)
         self.GetImageSize()
         
         err1, my_address, my_id = self.is_SetAllocatedImageMem()
