@@ -73,41 +73,131 @@ def gaussian2(xy, *p):
     R = rotmatrix(alpha)
     M = np.dot(R,np.dot(np.array([[1./sx**2,0],[0,1./sy**2]]),R.T))
     r = np.array([xy[:,0]-x0,xy[:,1]-y0])
-    g = A*np.exp(-0.5*np.sum(np.dot(M,r)*r,axis=0)) + off
+    g = A*np.exp(-2*np.sum(np.dot(M,r)*r,axis=0)) + off
     # print g
     return g
 
 
 
-def FitGaussian(data):
-    '''fits gaussian to data'''
+def FitGaussian(data,xdata=None,usesplit=False,useslice=False,meansize=5,critsplitvalue=100,critslicevalue=50):
+    '''
+    fits gaussian to data
+    usesplit: Should the 'split' method be used to improve performance?
+    useslice: If usesplit is True, usesclice has to be False!!!!! Use sclicing?
+    meansize: if usesplit = True: how many values are taken together to calculate the mean.
+    critsplitvalue: value from which on the 'split' method is used.
+    critslicevalue: threshold for slicing data.
+    '''
 
-    def split(arr, size):
+    # def splitold(arr, size):
+    #     '''
+    #     EXPERIMENTAL!
+    #     reduce size of fit array by taking mean over a certain number of cells
+    #     Not working with any xdata (still to implement)!!
+    #     '''
+    #     length = arr.size
+    #     cutoff = length % size
+    #     arrs = arr[cutoff:]
+    #     arrs = arrs.reshape((int((length-cutoff)/size),size))
+    #     arrs = np.mean(arrs, axis=1)
+    #     return arrs, cutoff
+
+    def eraseinvalidvalues(ydata,xdata,thresholdval=-1):
         '''
-        EXPERIMENTAL!
-        reduce size of fit array by taking mean over a certain number of cells
+        Erases invalid values (saturated pixels).
         '''
+
+        indices = np.argwhere(ydata<=thresholdval)
+        xdatanew = np.delete(xdata,indices)
+        ydatanew = np.delete(ydata,indices)
+
+        return ydatanew, xdatanew
+
+
+    def split(arr,xarr,size):
+        '''
+        Takes mean over -size- values, takes saturated pixel into account.
+        '''
+
         length = arr.size
         cutoff = length % size
-        arrs = arr[cutoff:]
-        arrs = arrs.reshape((int((length-cutoff)/size),size))
-        arrs = np.mean(arrs, axis=1)
-        return arrs, cutoff
+        # datalist = []
+        # xdatalist = []
+        datacut,remainingdata = np.split(arr,[cutoff])
+        xdatacut,remainingxdata = np.split(xarr,[cutoff])
+        # datalist.append(datacut)
+        # xdatalist.append(xdatacut)
+
+        # print "length", len(np.split(remainingdata,int((length-cutoff)/size)))
+
+        datalist = np.split(remainingdata,int((length-cutoff)/size))
+        xdatalist = np.split(remainingxdata,int((length-cutoff)/size))
+
+        datalist.insert(0,datacut)
+        xdatalist.insert(0,xdatacut)
+
+        newdatalist = []
+        newxdatalist = []
+
+        # print "Datalist", len(datalist)
+
+        for i in range(len(datalist)):
+            data,xdata = eraseinvalidvalues(datalist[i],xdatalist[i])
+            if len(data) > 0:
+                data = np.mean(data)
+                xdata = np.mean(xdata)
+                newdatalist.append(data)
+                newxdatalist.append(xdata)
+
+        newdatalist = np.asarray(newdatalist)
+        newxdatalist = np.asarray(newxdatalist)
+
+        return newdatalist,newxdatalist
+
+    def slicedata(arr,xarr,critslicevalue=100):
+        '''
+        Only takes out some values to do the fit.
+        '''
+
+        data, xdata = eraseinvalidvalues(arr,xarr)
+        slicenum = int(data.size/critslicevalue)
+        if slicenum > 0:
+            newlen = int(data.size/slicenum)
+            mask = slicenum * np.arange(newlen)
+            # print "mask", mask
+            data = data[mask]
+            xdata = xdata[mask]
+
+        return data, xdata
+
 
     # x = np.arange(data.size)
-    usepervimpro = True # Should the 'split' method be used to improve performance?
-    meansize = 5 # if usepervimpro = True: how many values are taken together to calculate the mean.
-    critvalue = 200 # value from which on the 'split' method is used.
-
-    if usepervimpro:
-        if data.size > critvalue:
-            data, cutoff = split(data,meansize)
-            corr = (meansize-1)/2.
-            x = np.arange(data.size)*meansize + corr + cutoff
-        else:
-            x = np.arange(data.size)
+    # usesplit = False # Should the 'split' method be used to improve performance?
+    # useslice = True # If usesplit is True, usesclice has to be False!!!!! Use sclicing?
+    # meansize = 5 # if usepervimpro = True: how many values are taken together to calculate the mean.
+    # critsplitvalue = 100 # value from which on the 'split' method is used.
+    # critslicevalue = 50 # threshold for slicing data.
+    if xdata != None:
+        x = xdata
     else:
         x = np.arange(data.size)
+    
+    if usesplit:
+        if data.size > critsplitvalue:
+            data, x = split(data,x,meansize)
+    elif useslice:
+        # print "use slicing"
+        data, x = slicedata(data,x,critslicevalue)
+        # print "length", len(data)
+    else:
+        data, x = eraseinvalidvalues(data,x)
+
+    # print "Data", data
+
+    if data.size <= 5:
+        print "ERROR - too many saturated pixel for proper fit!"
+        data = np.zeros(10)
+        x = np.zeros(10)
 
     # print data
 

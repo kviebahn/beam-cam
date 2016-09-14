@@ -36,7 +36,7 @@ def gaussian2(xy, *p):
     R = rotmatrix(alpha)
     M = np.dot(R,np.dot(np.array([[1./sx**2,0],[0,1./sy**2]]),R.T))
     r = np.array([xy[:,0]-x0,xy[:,1]-y0])
-    g = A*np.exp(-0.5*np.sum(np.dot(M,r)*r,axis=0)) + off
+    g = A*np.exp(-2*np.sum(np.dot(M,r)*r,axis=0)) + off
     # print g
     return g
 
@@ -118,7 +118,9 @@ class GaussBeamSimulation:
         gaussflat = gaussian2(XYflat,*params)
         gauss = np.array(gaussflat).reshape(ny,nx)
 
-        self.image = self.image + noise + gauss
+        self.image = (self.image + noise + gauss).astype(int)
+        #image saturation        
+        self.image[np.where(self.image>2**14)]=2**14
 
     def CreateImages(self,number=10):
         i = 0
