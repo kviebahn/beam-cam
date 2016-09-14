@@ -35,7 +35,6 @@ import platform
 import matplotlib.pyplot as plt
 from scipy.ndimage import zoom
 
-
 from CameraAPI import Camera_API
 
 
@@ -567,6 +566,35 @@ ExposureCapsDict = {
 
 
 
+
+# Trigger modes
+TriggerDictFlip = {
+'IS_GET_EXTERNALTRIGGER              ':0x8000,
+'IS_GET_TRIGGER_STATUS               ':0x8001,
+'IS_GET_TRIGGER_MASK                 ':0x8002,
+'IS_GET_TRIGGER_INPUTS               ':0x8003,
+'IS_GET_SUPPORTED_TRIGGER_MODE       ':0x8004,
+'IS_GET_TRIGGER_COUNTER              ':0x8000,
+'IS_SET_TRIGGER_MASK                 ':0x0100,
+'IS_SET_TRIGGER_CONTINUOUS           ':0x1000,
+'IS_SET_TRIGGER_OFF                  ':0x0000,
+'IS_SET_TRIGGER_HI_LO                ':0x0001, 
+'IS_SET_TRIGGER_LO_HI                ':0x0002, 
+'IS_SET_TRIGGER_SOFTWARE             ':0x0008, 
+'IS_SET_TRIGGER_HI_LO_SYNC           ':0x0010,
+'IS_SET_TRIGGER_LO_HI_SYNC           ':0x0020,
+'IS_SET_TRIGGER_PRE_HI_LO            ':0x0040,
+'IS_SET_TRIGGER_PRE_LO_HI            ':0x0080,
+'IS_GET_TRIGGER_DELAY                ':0x8000,
+'IS_GET_MIN_TRIGGER_DELAY            ':0x8001,
+'IS_GET_MAX_TRIGGER_DELAY            ':0x8002,
+'IS_GET_TRIGGER_DELAY_GRANULARITY    ':0x8003
+}
+
+TriggerDict = flipDict(TriggerDictFlip)
+
+
+
 # Up to here dictionaries of parameters for IS functions
 
 
@@ -618,7 +646,7 @@ LPBYTE = ct.pointer(BYTE())
 PDWORD = ct.pointer(DWORD()) # typedef DWORD*
 PVOID = ct.pointer(VOID())
 PCHAR = ct.pointer(CHAR())
-	
+    
 # // ----------------------------------------------------------------------------
 # // Info struct
 # // See example (struct_BOARDINFO) to learn how to convert c structures to an instance of a ct.Structure class
@@ -733,17 +761,17 @@ class CameraTypeSpecific_API(Camera_API):
 
         super(CameraTypeSpecific_API,self).__init__()
         
-	self.dllFolder = os.path.abspath(os.path.relpath('drivers'))
+        self.dllFolder = os.path.abspath(os.path.relpath('drivers'))
         if platform.architecture()[0] == '64bit':
             self.dllPath = os.path.join(self.dllFolder, 'ueye_api_64.dll')
         elif platform.architecture()[0] == '32bit':
             self.dllPath = os.path.join(self.dllFolder, 'ueye_api.dll')
         else:
             print "ERROR - loading .dll according to platform architecture failed!"
+            
+        self.dll = ct.cdll.LoadLibrary(self.dllPath)    
         
-	self.dll = ct.cdll.LoadLibrary(self.dllPath)    
-        
-	# Variables inherited from Camera_API
+    # Variables inherited from Camera_API
         self.imageArray = np.array([])
 
         self.cameraList = None
@@ -760,24 +788,85 @@ class CameraTypeSpecific_API(Camera_API):
         self.gainSteps = None
         
         #Own variables
-	# This is the camera handle:
-	self.hCam = 1
-
-	# Number of cameras (mutli-camera operation not implemented yet)
-	self.numberCams = None
-
-
-	# The array where the image is going to stored in.
+        # This is the camera handle:
+        self.hCam = 1
+    
+        # Number of cameras (mutli-camera operation not implemented yet)
+        self.numberCams = None
+    
+    
+        # The array where the image is going to stored in.
         self.ImageArrayRaw = np.array([])
+    
+        # Maybe useful in the future:
+        self.pixelPitch = None
 
-	# Maybe useful in the future:
-	self.pixelPitch = None
+    def __del__(self):
+        '''Shut down camera in any case'''
+        try:
+            self.StopCamera()
+        except:
+            pass
+
 
 ##########################################################
 ### original uEye methods (just translated form c to python)
 ##########################################################
 
+#IDSEXP   is_IsVideoFinish          (HIDS hCam, INT* pValue);
 
+    def is_IsVideoFinish(self):
+        '''Query whether image has been digitized properly.'''
+        pValue = INT(0x0003)
+        err = self.dll.is_IsVideoFinish(UINT(self.hCam), ct.byref(pValue))
+        print('is_IsVideoFinish: %s') %(EC[err])
+        print('is_IsVideoFinish: %s') %(pValue)
+        return err
+#/*!
+#* \brief Interface to set the pixel clock
+#* \param   hCam            valid device handle.
+#* \param   nCommand        Specifies the command
+#* \param   pParam          input or output storage for the accessed param.
+#* \param   cbSizeOfParam   size of *pParam.
+#* \return  error code
+#*/
+#IDSEXP is_PixelClock(HIDS hCam, UINT nCommand, void* pParam, UINT cbSizeOfParam);
+    def is_PixelClock(self, nCommand):
+        '''Setting the pixel clock to a lower value, due to USB transmission problems.'''
+        #pParam = ct.c_void_p()
+        pParam = UINT(13) #20 MHz
+        err = self.dll.is_PixelClock(UINT(self.hCam), UINT(nCommand), ct.byref(pParam), UINT(ct.sizeof(pParam)))
+        print('is_PixelClock: %s') %(EC[err])
+        #print(pParam)
+        return err
+
+#/*!
+# * \brief Interface to control various device features.
+# *
+# * \param   hCam            valid device handle.
+# * \param   nCommand        Specifies the command and device.
+# * \param   pParam          input or output storage for the accessed param.
+# * \param   cbSizeOfParam   size of *pParam.
+# * \return  error code
+# */
+#IDSEXP is_DeviceFeature(HIDS hCam, UINT nCommand, void* pParam, UINT cbSizeOfParam);
+    def is_DeviceFeature(self, nCommand):
+        pParam = ct.c_void_p()
+        err = self.dll.is_DeviceFeature(UINT(self.hCam), UINT(nCommand), pParam, UINT(1))
+        print('is_DeviceFeature: %s') %err
+        print(pParam)
+        return err
+
+# IDSEXP is_IO(HIDS hCam, UINT nCommand, void* pParam, UINT cbSizeOfParam);
+    def is_IO(self, nCommand):
+        '''Not correctly implemented'''
+        nCurrentState = ct.ui(0)
+        print(nCurrentState)
+        pParam = ct.pointer(nCurrentState)
+        err = self.dll.is_IO(UINT(self.hCam), UINT(nCommand), pParam, UINT(1))
+        print(nCurrentState)
+        print('is_IO: %s') %(err)
+        return err
 
 #  IDSEXP   is_GetNumberOfDevices     (void);
 
@@ -790,15 +879,15 @@ class CameraTypeSpecific_API(Camera_API):
         return err
 
     def is_CaptureVideo(self, wait):
-        '''wait is time in ms(?)'''
-        err = self.dll.is_FreezeVideo(UINT(self.hCam), INT(wait))
+        '''wait is timeout value in 10ms, min 40ms'''
+        err = self.dll.is_CaptureVideo(UINT(self.hCam), INT(wait))
         #print 'is_CaptureVideo: %s' % (EC[err])
         return err
 
 
     def is_SetImageMem(self, pcMem, idMem):
         '''This method makes the allocated memory active.'''
-	err = self.dll.is_SetImageMem(UINT(self.hCam), pcMem, ct.c_int(idMem))
+        err = self.dll.is_SetImageMem(UINT(self.hCam), pcMem, ct.c_int(idMem))
         #print 'is_SetImageMem: %s' % (EC[err])
         return err
 
@@ -833,11 +922,11 @@ class CameraTypeSpecific_API(Camera_API):
     def is_SetAllocatedImageMem(self, bitspixel = 16):
         '''Allocates right amount of memory for a given numpyArray. self.imageArray is used to store the image data. Returns memory address (ctypes pointer) and image id (int).'''
         width = self.imageSize[0]
-	height = self.imageSize[1]
-	#print width, height
-	self.imageArrayRaw = np.zeros((height, width), dtype = np.uint16)
-	numpyArray = self.imageArrayRaw
-	pcMem = numpyArray.ctypes.data_as(ct.POINTER(ct.c_uint16))
+        height = self.imageSize[1]
+        #print width, height
+        self.imageArrayRaw = np.zeros((height, width), dtype = np.uint16)
+        numpyArray = self.imageArrayRaw
+        pcMem = numpyArray.ctypes.data_as(ct.POINTER(ct.c_uint16))
         pid = ct.pointer(ct.c_int())
         err = self.dll.is_SetAllocatedImageMem(UINT(self.hCam), ct.c_int(width), ct.c_int(height), ct.c_int(bitspixel), pcMem, pid)
         #print 'is_SetAllocatedImageMem: pcMem = %s' %(pcMem)
@@ -848,7 +937,7 @@ class CameraTypeSpecific_API(Camera_API):
 
     def is_SetErrorReport(self, Mode):
         '''
-	This function toggles an error dialogue box on/off.
+        This function toggles an error dialogue box on/off.
         Mode = 0x8000 (= 32768) is an enquiry.
         '''
         err = self.dll.is_SetErrorReport(UINT(self.hCam), INT(Mode))
@@ -871,7 +960,7 @@ class CameraTypeSpecific_API(Camera_API):
     def is_ExitCamera(self):
         err = self.dll.is_ExitCamera(UINT(self.hCam))
         #print 'is_ExitCamera: %s' % (EC[err])
-	return err
+        return err
 
     def is_GetCameraInfo(self):
         pInfo = ct.pointer(struct_BOARDINFO())
@@ -919,18 +1008,18 @@ class CameraTypeSpecific_API(Camera_API):
 
     def is_SetHardwareGain(self, nMaster):
         '''
-	if nMaster in [0,100] the gain level is set to this value
-	if nMaster == 0x8000 the current gain value is returned
-	if nMaster == 0x8004 the default gain value is returned
-	'''
-	err = self.dll.is_SetHardwareGain(UINT(self.hCam), INT(nMaster), INT(-1), INT(-1), INT(-1))
-	#if (nMaster == 0x8000) or (nMaster == 0x8004):
-	#    print 'is_SetHardwareGain: %s = %f' % (GainDict[nMaster], err)
-	#else:
-	#    if (err == 0) and (nMaster in np.arange(101)):
-	#        print 'is_SetHardwareGain: %f' % (nMaster)
-	#	print 'is_SetHardwareGain: %s' % (EC[err])
-	return err
+    if nMaster in [0,100] the gain level is set to this value
+    if nMaster == 0x8000 the current gain value is returned
+    if nMaster == 0x8004 the default gain value is returned
+    '''
+        err = self.dll.is_SetHardwareGain(UINT(self.hCam), INT(nMaster), INT(-1), INT(-1), INT(-1))
+        #if (nMaster == 0x8000) or (nMaster == 0x8004):
+        #    print 'is_SetHardwareGain: %s = %f' % (GainDict[nMaster], err)
+        #else:
+        #    if (err == 0) and (nMaster in np.arange(101)):
+        #        print 'is_SetHardwareGain: %f' % (nMaster)
+        #    print 'is_SetHardwareGain: %s' % (EC[err])
+        return err
 
 
 
@@ -1000,6 +1089,15 @@ class CameraTypeSpecific_API(Camera_API):
         return err, pParam.contents
 
 
+#IDSEXP is_SetExternalTrigger     (HIDS hCam, INT nTriggerMode);
+    def is_SetExternalTrigger(self, nTriggerMode):
+        '''If called with IS_GET_SUPPORTED_TRIGGER_MODE = 0x8004, then it returns supported mode, seperated by logical ORs.
+        Hence 0x1009 means modes 0x1000, 0x0001, and 0x1008'''
+        err = self.dll.is_SetExternalTrigger(UINT(self.hCam), INT(nTriggerMode))
+        return err
+
+
+### Methods that are needed for trigger operation:
 
 
 
@@ -1015,122 +1113,127 @@ class CameraTypeSpecific_API(Camera_API):
         This method reads out the actual image size and stores it in self.imageSize and returns the values
         as tuple (width,height).
         '''
-    	err, structSensor = self.is_GetSensorInfo()
-	imagesize = (int(getattr(structSensor, 'nMaxWidth')), int(getattr(structSensor, 'nMaxHeight')))
-	pixelSize = getattr(structSensor, 'wPixelSize')/100.
-	print 'Pixel size = %1.2f um' %(pixelSize)
-	self.pixelPitch = pixelSize
-	self.imageSize = imagesize
-	
-	return imagesize
+        err, structSensor = self.is_GetSensorInfo()
+        imagesize = (int(getattr(structSensor, 'nMaxWidth')), int(getattr(structSensor, 'nMaxHeight')))
+        pixelSize = getattr(structSensor, 'wPixelSize')/100.
+        print 'Pixel size = %1.2f um' %(pixelSize)
+        self.pixelPitch = pixelSize
+        self.imageSize = imagesize
+        
+        return imagesize
     
     def StartCamera(self, camindex=0):
-    	'''
-	Some initialising routines
-	'''
-		
-	self.GetImageSize()
-	
-        err1, my_address, my_id = self.is_SetAllocatedImageMem()
+        '''
+        Some initialising routines
+        '''
+        self.is_PixelClock(6)
+        self.GetImageSize()
         
-	err2 = self.is_SetImageMem(my_address, my_id)
-	
-	if (int(err1) + int(err2)) == 0:
-	    print 'Camera successfully initialised'
+        err1, my_address, my_id = self.is_SetAllocatedImageMem()
+            
+        err2 = self.is_SetImageMem(my_address, my_id)
+        
+        if (int(err1) + int(err2)) == 0:
+            print 'Camera successfully initialised'
     
     def StopCamera(self):
         err = self.is_ExitCamera()
-	if int(err) == 0:
-	   print 'Camera shutting down...'
+        if int(err) == 0:
+           print 'Camera shutting down...'
 
 
     def CreateCameraList(self):
-    	'''This method is supposed to return a list of strings (the serial numbers of connected cameras, and set the variable self.cameraList to this list. Currently we don't need multi-camera operation, so I just make a one-entry list of the current active serial number.'''
+        '''This method is supposed to return a list of strings (the serial numbers of connected cameras, and set the variable self.cameraList to this list. Currently we don't need multi-camera operation, so I just make a one-entry list of the current active serial number.'''
 
         err0, hCam = self.is_InitCamera()
-	if int(err0) == 3:
-	    raise Exception('Error: No camera detected')
-	self.hCam = hCam
-        
-	err, structInfo = self.is_GetCameraInfo()
+        if int(err0) == 3:
+            raise Exception('Error: No camera detected')
+        self.hCam = hCam
+            
+        err, structInfo = self.is_GetCameraInfo()
         if int(err) != 0:
-	    raise Exception('Error loading Serial number')
-	
-	my_serial = getattr(structInfo, 'SerNo[12]')
-    	self.cameraList = [my_serial] 
-	return [my_serial]
+            raise Exception('Error loading Serial number')
+
+        my_serial = getattr(structInfo, 'SerNo[12]')
+        self.cameraList = [my_serial] 
+        return [my_serial]
 
     def GetNextImage(self):
-	'''This method stores the active image in self.imageArray'''
-	if (int(self.is_CaptureVideo(25)) != 0):
-	    raise Exception('Error during image acquisition')
-
-	self.imageArray = zoom(self.imageArrayRaw, [1.0, 0.66])
+        '''This method stores the active image in self.imageArray'''
+        if (int(self.is_FreezeVideo(50)) != 0):
+             raise Exception('Error during image acquisition or no trigger received')
+        self.imageArray = zoom(self.imageArrayRaw, [1.0, 0.666])
+        return None
 
     def GetSaturationValue(self):
-    	'''Saturated pixels have this value. the bits per pixel for uEye cameras is 16!'''
-    	satvalue = 2**16 - 1
-	self.saturationValue = satvalue
-	return satvalue
+        '''Saturated pixels have this value. the bits per pixel for uEye cameras is 16!'''
+        satvalue = 2**16 - 1
+        self.saturationValue = satvalue
+        return satvalue
 
 
     def GetExposureTime(self):
         '''Sets the variabel self.exposureTime to the current value in ms.'''
-	err, my_value = self.is_Exposure(7)
-	self.exposureTime = my_value.value
+        err, my_value = self.is_Exposure(7)
+        self.exposureTime = my_value.value
         return my_value.value
 
     def SetExposureTime(self,exposuretime = 0):
         '''Changes the exposure time of the camera to exposuretime, in ms. Sets the variabel self.exposureTime to the current value in ms.'''
         self.is_Exposure(12, exposuretime)
-	self.exposureTime = exposuretime
+        self.exposureTime = exposuretime
 
     def GetExposureTimeRange(self):
         '''Gets the range of exposure time as (min, max).'''
-    	err0, expomin = self.is_Exposure(3)
-    	err1, expomax = self.is_Exposure(4)
-	self.exposureRange = (expomin.value, expomax.value)
-	return self.exposureRange
+        err0, expomin = self.is_Exposure(3)
+        err1, expomax = self.is_Exposure(4)
+        self.exposureRange = (expomin.value, expomax.value)
+        return self.exposureRange
 
     def GetExposureTimeSteps(self):
-    	'''The increments of exposure time.'''
-    	err, exposteps = self.is_Exposure(5)
-	self.exposureSteps = exposteps.value
-	return self.exposureSteps
+        '''The increments of exposure time.'''
+        err, exposteps = self.is_Exposure(5)
+        self.exposureSteps = exposteps.value
+        return self.exposureSteps
 
 
     def GetGainValue(self):
-    	'''gets the current gain value'''
-	err = self.is_SetHardwareGain(0x8000)
-	self.gainValue = err
-	return err
+        '''gets the current gain value'''
+        err = self.is_SetHardwareGain(0x8000)
+        self.gainValue = err
+        return err
 
     def SetGainValue(self, gainvalue = 0):
         err = self.is_SetHardwareGain(int(gainvalue))
-   	self.gainValue = gainvalue
-	return gainvalue
+        self.gainValue = gainvalue
+        return gainvalue
 
     def GetGainRange(self):
-    	self.gainRange = (0.0, 100.0)
-	return self.gainRange
+        self.gainRange = (0.0, 100.0)
+        return self.gainRange
 
     def GetGainSteps(self):
-    	self.gainSteps = 1.0
-	return self.gainSteps
+        self.gainSteps = 1.0
+        return self.gainSteps
 
 
 
 if __name__ == '__main__':
     check = CameraTypeSpecific_API()
-    check.is_SetErrorReport(1)
+    #check.is_SetErrorReport(1)
     check.CreateCameraList()
+    check.is_PixelClock(6)
     check.is_GetSensorInfo()
+    print(check.GetImageSize())
     check.StartCamera()
 
+
+#    check.is_DeviceFeature(7)
+    #check.is_SetExternalTrigger(0x0001)    
     print check.imageArray
     check.GetNextImage()
     print check.imageArray
-    
+    check.is_IsVideoFinish()    
     check.StopCamera()
 
 
