@@ -325,13 +325,13 @@ class Ui_Form(object):
         self.trackCheck = QtGui.QCheckBox(Form)
         self.trackCheck.setObjectName(_fromUtf8("trackCheck"))
         self.gridLayout.addWidget(self.trackCheck, 7, 5, 1, 1)
-        self.trackCheck.setChecked(True)
+        self.trackCheck.setChecked(False)
 
         '''Defines the check box for the reference beam'''
         self.refCheck = QtGui.QCheckBox(Form)
         self.refCheck.setObjectName(_fromUtf8("refCheck"))
         self.gridLayout.addWidget(self.refCheck, 8, 5, 1, 1)
-        self.refCheck.setChecked(True)
+        self.refCheck.setChecked(False)
 
 
         '''Defines the heading for the 'time evolution plot' column'''
